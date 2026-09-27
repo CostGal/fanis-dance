@@ -1,0 +1,1629 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Fanis Dance</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
+<style>
+:root{
+  --sky:#5c94fc;
+  --ink:#ffffff;
+  --ink-shadow:#1b2a6b;
+  --title:#ffd35a;
+  --title-shadow:#b33d27;
+  --edge:#17121a;
+  --panel:#ffffff;
+  --panel-ink:#17121a;
+  --floor-ink:#ffffff;
+  --floor-shadow:#000000;
+  --gold:#ffd35a;
+  --tile:#3a3060;
+  --tile-dim:#6b6388;
+  --judge-good:#ffffff;
+  --judge-miss:#ff8f8f;
+  --scrim:rgba(12,9,24,.94);
+  --p1:#ff4f7b;
+  --p2:#4fd8ff;
+  --info-bg:rgba(12,9,24,.72);
+  --slot:clamp(40px, min(calc((100vw - 64px) / 5), calc((100vh - 560px) / 3)), 64px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){ --sky:#0b0b1e; --ink-shadow:#000000; color-scheme:dark; }
+}
+:root[data-theme="dark"]{ --sky:#0b0b1e; --ink-shadow:#000000; color-scheme:dark; }
+
+html,body{height:100%;overflow:hidden}
+body{
+  margin:0;background:var(--sky);color:var(--ink);
+  font-family:"Press Start 2P",ui-monospace,Menlo,Consolas,monospace;
+  touch-action:none;-webkit-user-select:none;user-select:none;
+  -webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;overscroll-behavior:none;
+}
+#stage{position:fixed;top:0;display:block;image-rendering:crisp-edges;image-rendering:pixelated;cursor:pointer;outline:none}
+
+.pix{
+  pointer-events:auto;touch-action:manipulation;cursor:pointer;
+  font:inherit;font-size:10px;letter-spacing:.05em;color:var(--panel-ink);background:var(--panel);
+  border:0;border-radius:0;min-height:44px;padding:0 12px;margin:4px;
+  box-shadow:0 -4px 0 0 var(--edge),0 4px 0 0 var(--edge),-4px 0 0 0 var(--edge),4px 0 0 0 var(--edge);
+}
+.pix:active{transform:translateY(2px)}
+.pix:focus-visible,.slot:focus-visible{outline:3px dashed var(--title);outline-offset:8px}
+
+.hud{
+  position:fixed;left:0;right:0;top:0;z-index:3;pointer-events:none;text-align:center;
+  padding:calc(env(safe-area-inset-top,0px) + 12px) calc(env(safe-area-inset-right,0px) + 16px) 0 calc(env(safe-area-inset-left,0px) + 16px);
+  display:flex;flex-direction:column;align-items:center;gap:12px;
+}
+.bar{align-self:stretch;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.bar .spacer{flex:1}
+h1{
+  margin:0;font-weight:400;line-height:1;letter-spacing:.08em;white-space:nowrap;
+  color:var(--title);text-shadow:4px 4px 0 var(--title-shadow),8px 8px 0 var(--edge);
+}
+#hint{margin:0;font-size:11px;line-height:1.6;letter-spacing:.05em;text-shadow:2px 2px 0 var(--ink-shadow)}
+.blink{animation:blink 1s steps(1) infinite}
+@keyframes blink{50%{opacity:0}}
+
+.select{
+  position:fixed;inset:0;z-index:2;pointer-events:none;text-align:center;
+  padding:calc(env(safe-area-inset-top,0px) + 68px) calc(env(safe-area-inset-right,0px) + 16px) calc(env(safe-area-inset-bottom,0px) + 18px) calc(env(safe-area-inset-left,0px) + 16px);
+  display:flex;flex-direction:column;align-items:center;gap:12px;
+}
+.select h2{
+  margin:0;font-weight:400;font-size:clamp(13px,4.4vw,22px);line-height:1.5;letter-spacing:.05em;text-wrap:balance;
+  color:var(--title);text-shadow:3px 3px 0 var(--title-shadow),5px 5px 0 var(--edge);pointer-events:auto;
+}
+.grid{display:grid;grid-template-columns:repeat(5,var(--slot));gap:8px;pointer-events:auto}
+.slot{
+  position:relative;width:var(--slot);height:var(--slot);padding:0;border:0;border-radius:0;cursor:pointer;
+  background:var(--tile);touch-action:manipulation;
+  box-shadow:0 -3px 0 0 var(--edge),0 3px 0 0 var(--edge),-3px 0 0 0 var(--edge),3px 0 0 0 var(--edge);
+}
+.slot canvas{display:block;width:100%;height:100%;image-rendering:crisp-edges;image-rendering:pixelated}
+.slot.soon{background:#262040}
+.slot.on{box-shadow:0 -4px 0 0 var(--gold),0 4px 0 0 var(--gold),-4px 0 0 0 var(--gold),4px 0 0 0 var(--gold);animation:glow .6s steps(1) infinite}
+@keyframes glow{50%{box-shadow:0 -4px 0 0 var(--title-shadow),0 4px 0 0 var(--title-shadow),-4px 0 0 0 var(--title-shadow),4px 0 0 0 var(--title-shadow)}}
+.slot .q{position:absolute;inset:0;display:grid;place-items:center;font-size:calc(var(--slot) * .34);color:#8f86b8;text-shadow:2px 2px 0 var(--edge)}
+.slot .new{position:absolute;top:-8px;right:-8px;font-size:7px;padding:3px 4px;background:var(--gold);color:var(--edge)}
+.info{display:flex;flex-direction:column;align-items:center;gap:8px;max-width:34em}
+#selName{font-size:clamp(14px,4.4vw,20px);color:var(--floor-ink);text-shadow:3px 3px 0 var(--floor-shadow)}
+#selTag{font-size:9px;line-height:1.6;color:var(--gold);text-shadow:2px 2px 0 var(--floor-shadow)}
+#selReq{font-size:8px;line-height:1.8;color:var(--floor-ink);text-shadow:2px 2px 0 var(--floor-shadow);min-height:1.8em}
+.btns{margin-top:auto;display:flex;gap:14px;flex-wrap:wrap;justify-content:center;pointer-events:auto}
+#go{font-size:14px;min-height:52px;padding:0 20px;background:var(--gold)}
+#duel{font-size:12px;min-height:52px;padding:0 14px}
+#go:disabled,#duel:disabled{background:var(--tile-dim);color:var(--tile);cursor:default;transform:none}
+.slot .p1{position:absolute;top:-8px;left:-8px;font-size:7px;padding:3px 4px;background:var(--p1);color:var(--edge)}
+
+@media (min-aspect-ratio: 6/5){
+  :root{--slot:clamp(40px, min(calc((min(52vw, 520px) - 80px) / 5), calc((100vh - 330px) / 3)), 72px)}
+  .select{right:auto;width:min(52vw,520px);justify-content:center}
+  .btns{margin-top:4px}
+  .info{background:var(--info-bg);padding:12px 16px}
+}
+
+.low{
+  position:fixed;left:0;right:0;bottom:0;pointer-events:none;text-align:center;
+  padding:0 16px calc(env(safe-area-inset-bottom,0px) + 12px);
+  display:flex;flex-direction:column;align-items:center;gap:6px;
+}
+#move{font-size:clamp(14px,5vw,26px);min-height:1.2em;color:var(--floor-ink);text-shadow:3px 3px 0 var(--floor-shadow)}
+.pop{animation:pop .4s steps(4)}
+@keyframes pop{0%{transform:scale(.4)}60%{transform:scale(1.25)}100%{transform:scale(1)}}
+#combo{font-size:9px;line-height:1.6;min-height:1em;color:var(--gold);text-shadow:2px 2px 0 var(--floor-shadow);font-variant-numeric:tabular-nums}
+
+#bubble{
+  position:fixed;left:0;top:0;z-index:4;pointer-events:none;white-space:nowrap;
+  background:var(--panel);color:var(--panel-ink);font-size:10px;line-height:1.4;padding:8px 10px;
+  box-shadow:0 -3px 0 0 var(--edge),0 3px 0 0 var(--edge),-3px 0 0 0 var(--edge),3px 0 0 0 var(--edge);
+}
+#bubble::after{
+  content:"";position:absolute;left:calc(50% - 3px);bottom:-6px;width:6px;height:6px;background:var(--panel);
+  box-shadow:-3px 0 0 0 var(--edge),3px 0 0 0 var(--edge),0 3px 0 0 var(--edge);
+}
+.judge{
+  position:fixed;z-index:4;pointer-events:none;font-size:11px;white-space:nowrap;transform:translate(0,-50%);
+  text-shadow:2px 2px 0 var(--floor-shadow);animation:rise .65s steps(6) forwards;
+}
+.judge.p{color:var(--gold)} .judge.g{color:var(--judge-good)} .judge.m{color:var(--judge-miss)}
+@keyframes rise{to{transform:translate(0,-180%);opacity:0}}
+
+#banner{
+  position:fixed;left:50%;top:40%;z-index:6;transform:translate(-50%,-50%);pointer-events:none;
+  width:max-content;max-width:calc(100vw - 48px);text-align:center;padding:18px 20px;
+  background:var(--edge);color:var(--floor-ink);
+  box-shadow:0 -4px 0 0 var(--gold),0 4px 0 0 var(--gold),-4px 0 0 0 var(--gold),4px 0 0 0 var(--gold);
+}
+#banner:not([hidden]){animation:flash .3s steps(1) 4}
+@keyframes flash{50%{background:var(--title-shadow)}}
+#bTop{font-size:10px;line-height:1.6;color:var(--gold)}
+#bName{font-size:clamp(18px,6vw,30px);margin:12px 0;line-height:1.2}
+#bSub{font-size:8px;line-height:1.8}
+.bend{
+  position:fixed;left:0;right:0;bottom:0;z-index:3;display:flex;gap:14px;justify-content:center;flex-wrap:wrap;
+  padding:0 16px calc(env(safe-area-inset-bottom,0px) + 22px);
+}
+#rematch{font-size:12px;min-height:52px;background:var(--gold)}
+#bExit{font-size:12px;min-height:52px}
+#toast{
+  position:fixed;left:50%;top:calc(env(safe-area-inset-top,0px) + 72px);z-index:6;transform:translateX(-50%);pointer-events:none;
+  background:var(--gold);color:var(--edge);font-size:9px;line-height:1.6;padding:8px 12px;white-space:nowrap;
+  box-shadow:0 -3px 0 0 var(--edge),0 3px 0 0 var(--edge),-3px 0 0 0 var(--edge),3px 0 0 0 var(--edge);
+}
+.panel{
+  position:fixed;inset:0;z-index:8;background:var(--scrim);display:flex;justify-content:center;
+  padding:calc(env(safe-area-inset-top,0px) + 16px) 16px calc(env(safe-area-inset-bottom,0px) + 16px);
+}
+.panel-in{outline:none;width:min(100%,520px);display:flex;flex-direction:column;gap:16px;overflow:auto;padding:8px}
+.panel h2{
+  margin:0;font-weight:400;font-size:clamp(16px,5vw,24px);line-height:1.4;text-align:center;
+  color:var(--title);text-shadow:3px 3px 0 var(--title-shadow),5px 5px 0 var(--edge);
+}
+.sub{margin:0;font-size:9px;letter-spacing:.05em;color:var(--gold)}
+.bests{display:grid;grid-template-columns:1fr auto;gap:10px 16px;margin:0;font-size:9px;line-height:1.5;color:var(--floor-ink)}
+.bests dd{margin:0;color:var(--gold);text-align:right;font-variant-numeric:tabular-nums}
+.tlist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.tlist li{display:flex;gap:14px;align-items:center;padding:10px 12px;background:var(--tile)}
+.tlist li.off{background:#262040}
+.medal{flex:none;width:18px;height:18px;background:var(--gold);box-shadow:0 -3px 0 0 var(--edge),0 3px 0 0 var(--edge),-3px 0 0 0 var(--edge),3px 0 0 0 var(--edge)}
+.tlist li.off .medal{background:var(--tile-dim)}
+.tname{font-size:10px;line-height:1.5;color:var(--floor-ink)}
+.tdesc{font-size:8px;line-height:1.7;color:#cfc8ea}
+.tlist li.off .tname{color:#a79fc9}
+#tclose{align-self:center;background:var(--gold)}
+@media (prefers-reduced-motion: reduce){ .blink,.pop,.slot.on,#banner:not([hidden]){animation:none} .judge{animation-timing-function:steps(1)} }
+</style>
+
+<canvas id="stage" tabindex="0" aria-label="8-bit dance stage. Tap the dancer's head, or press Space, to dance."></canvas>
+<div class="hud">
+  <div class="bar">
+    <button id="back" class="pix" type="button" hidden>&lt; FIGHTERS</button>
+    <button id="trophyBtn" class="pix" type="button">TROPHIES</button>
+    <span class="spacer"></span>
+    <button id="mute" class="pix" type="button">SOUND ON</button>
+  </div>
+  <h1 id="title" hidden>FANIS</h1>
+  <p id="hint" class="blink" hidden>TAP HIS HEAD</p>
+</div>
+<div id="select" class="select">
+  <h2 id="selTitle">CHOOSE YOUR FIGHTER</h2>
+  <div id="grid" class="grid" role="group" aria-label="Fighters"></div>
+  <div class="info">
+    <div id="selName"></div>
+    <div id="selTag"></div>
+    <div id="selReq"></div>
+  </div>
+  <div class="btns">
+    <button id="go" class="pix" type="button">DANCE!</button>
+    <button id="duel" class="pix" type="button">DANCE-OFF</button>
+  </div>
+</div>
+<div id="low" class="low" hidden><div id="move" aria-live="polite"></div><div id="combo"></div></div>
+<div id="bEnd" class="bend" hidden>
+  <button id="rematch" class="pix" type="button">REMATCH</button>
+  <button id="bExit" class="pix" type="button">FIGHTERS</button>
+</div>
+<div id="bubble" hidden></div>
+<div id="toast" role="status" hidden></div>
+<div id="banner" hidden><div id="bTop"></div><div id="bName"></div><div id="bSub"></div></div>
+<div id="trophies" class="panel" role="dialog" aria-modal="true" aria-labelledby="tTitle" hidden>
+  <div id="tPanel" class="panel-in" tabindex="-1">
+    <h2 id="tTitle">TROPHIES</h2>
+    <p class="sub">PERSONAL BESTS ON THIS PHONE</p>
+    <dl id="bests" class="bests"></dl>
+    <p id="tCount" class="sub"></p>
+    <ul id="tlist" class="tlist"></ul>
+    <button id="tclose" class="pix" type="button">CLOSE</button>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+const $ = id => document.getElementById(id);
+const cv = $('stage'), mainG = cv.getContext('2d');
+let g = mainG;
+const E = {
+  back: $('back'), mute: $('mute'), title: $('title'), hint: $('hint'), select: $('select'), selTitle: $('selTitle'),
+  grid: $('grid'), selName: $('selName'), selTag: $('selTag'), selReq: $('selReq'), go: $('go'),
+  low: $('low'), move: $('move'), combo: $('combo'), bubble: $('bubble'),
+  banner: $('banner'), bTop: $('bTop'), bName: $('bName'), bSub: $('bSub'),
+  trophyBtn: $('trophyBtn'), duel: $('duel'), bEnd: $('bEnd'), rematch: $('rematch'), bExit: $('bExit'), toast: $('toast'),
+  trophies: $('trophies'), bests: $('bests'), tCount: $('tCount'), tlist: $('tlist'), tclose: $('tclose'),
+};
+const pick = a => a[Math.random() * a.length | 0];
+const perf = () => performance.now() / 1000;
+const mod = (a, n) => ((a % n) + n) % n;
+const fmtTime = sec => { const s = Math.floor(sec); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+};
+
+/* ================= Sprites ================= */
+const K = '#17121a', GLASS = '#22304f', SIL_COL = '#1f1834';
+const PARTY = ['#ff4f7b', '#ffd35a', '#4fd8ff', '#8cff5a', '#b36bff', '#ff8a3d'];
+
+// Heads are 14 wide. Letters map through each fighter's palette; k is always the outline.
+const FANIS_HEAD = [
+  '...kkkkkkkk...',
+  '..khhhhhhhhk..',
+  '.khhhhhhhhhhk.',
+  '.khshhhhhhshk.',
+  '.kssssssssssk.',
+  '.kssssssssssk.',
+  '.kshhsssshhsk.',
+  'kSssksssskssSk',
+  'kSbsssSSsssbSk',
+  '.kbbsbbbbsbbk.',
+  '.kbbbbmmbbbbk.',
+  '..kbbbbbbbbk..',
+  '...kkkkkkkk...',
+];
+const AMARILDO_HEAD = [ // two rows of quiff above the usual head top
+  '....kkkkk.....',
+  '...khHHHhk....',
+  '..khhHHhhhkk..',
+  '.khhhhHhhhhhk.',
+  '.khhhhhhhhhhk.',
+  '.kShhhhhhhhSk.',
+  '.kSssssssssSk.',
+  '.kssssssssssk.',
+  '.ksyyyssyyysk.',
+  'kSysksyysksySk',
+  'kSsyyySSyyysSk',
+  '.ktsssssssstk.',
+  '.ktsssmmssstk.',
+  '..kttttttttk..',
+  '...kkkkkkkk...',
+];
+const EMY_HEAD = [
+  '...kkkkkkkk...',
+  '..kHhdHHdhHk..',
+  '.khHdhhhhdHhk.',
+  '.kHdhHhhHhdHk.',
+  '.khdssssssdhk.',
+  '.khsssssssshk.',
+  '.khddssssddhk.',
+  '.khsksssskshk.',
+  '.kssssSSssssk.',
+  'eksrssssssrske',
+  '.kssssllssssk.',
+  '..kssssssssk..',
+  '...kkkkkkkk...',
+];
+// Silhouettes for the fighters still to come; the outline is added at load.
+const MASKS = [
+  ['..............', '....######....', '...########...', '...########...', '.##########...', '...########...', '...########...', '...########...', '...########...', '...########...', '....######....', '.....####.....', '..............'],
+  ['..............', '.....####.....', '......##......', '...########...', '...########...', '...########...', '...########...', '...########...', '...########...', '...########...', '....######....', '.....####.....', '..............'],
+  ['..............', '....######....', '...########...', '..##########..', '..##########..', '..##########..', '..##########..', '..##########..', '..##########..', '..##########..', '..##########..', '..###....###..', '..............'],
+  ['..............', '...########...', '..##########..', '.############.', '.############.', '.############.', '..##########..', '...########...', '...########...', '...########...', '....######....', '.....####.....', '..............'],
+  ['..............', '...#..##..#...', '...##.##.##...', '...########...', '..##########..', '...########...', '...########...', '...########...', '...########...', '...########...', '....######....', '.....####.....', '..............'],
+].map(rows => rows.map((row, r) => [...row].map((ch, c) => {
+  if (ch === '#') return 'h';
+  const at = (y, x) => rows[y] && rows[y][x] === '#';
+  return at(r - 1, c) || at(r + 1, c) || at(r, c - 1) || at(r, c + 1) ? 'k' : '.';
+}).join('')));
+const LOCK = ['.###.', '#...#', '#####', '##.##', '#####'];
+const NOTE = ['..##.', '..#.#', '..#..', '.##..', '###..', '.#...'];
+const STAR = ['.#.', '###', '.#.'];
+const PLATE = ['.###.', '#####'];
+
+// Limbs are written for the dancer's left side (screen left) and mirrored for the right.
+// Arm: [elbow out, elbow down, hand out, hand down] from the shoulder. Out = away from the body.
+const ARM = {
+  D: [1, 4, 1, 8], U: [2, -4, 3, -9], O: [4, 0, 8, 0], H: [4, 3, 1, 7],
+  PU: [3, -3, 7, -8], PD: [3, 3, 7, 7], X: [-1, 5, -5, 7], G: [4, 0, 4, -5], B: [4, 0, 4, 5],
+  F: [3, -1, -3, -5], HD: [4, -3, 2, -8], PF: [2, 3, 4, -1], W: [3, 3, 6, -1],
+};
+// Leg: [foot out, foot up, knee out].
+const LEG = { S: [0, 0, 0], W: [2, 0, 0], Q: [2, 0, 2], K: [5, 4, 1], T: [1, 3, 2], C: [-3, 0, 0], P: [0, 1, 0], L: [1, 5, 3] };
+const IDLE = { la: 'D', ra: 'D', ll: 'S', rl: 'S' };
+const IDLE_BREATH = { la: 'D', ra: 'D', ll: 'S', rl: 'S', y: 1 };
+const IDLE_TAP = { la: 'D', ra: 'D', ll: 'S', rl: 'P', hy: 1 };
+const POKED = { la: 'H', ra: 'H', ll: 'W', rl: 'W' };
+
+/* ================= Dances =================
+   One pose per "hit" of the song (eighth notes in 4/4, the 3-2-2 steps in 7/8). hold = hits per pose. need = combo to unlock. */
+const FANIS_MOVES = [
+  { name: 'GROOVE', need: 0, poses: [
+    { la: 'U', ra: 'D', ll: 'W', rl: 'W', hx: -1 }, { la: 'B', ra: 'B', ll: 'Q', rl: 'Q', y: 2 },
+    { la: 'D', ra: 'U', ll: 'W', rl: 'W', hx: 1 }, { la: 'B', ra: 'B', ll: 'Q', rl: 'Q', y: 2 }] },
+  { name: 'DISCO', need: 0, poses: [
+    { la: 'H', ra: 'PU', ll: 'W', rl: 'S', x: -1, hx: 1 }, { la: 'H', ra: 'X', ll: 'W', rl: 'W', y: 1 },
+    { la: 'H', ra: 'PU', ll: 'W', rl: 'S', x: -1, hx: 1 }, { la: 'H', ra: 'PD', ll: 'S', rl: 'W', y: 1 }] },
+  { name: 'ROBOT', need: 0, poses: [
+    { la: 'G', ra: 'B', ll: 'S', rl: 'W', x: -1, hx: -1 }, { la: 'B', ra: 'G', ll: 'W', rl: 'S', x: 1, hx: 1 }] },
+  { name: 'JUMP', need: 3, poses: [
+    { la: 'B', ra: 'B', ll: 'Q', rl: 'Q', y: 2 }, { la: 'U', ra: 'U', ll: 'T', rl: 'T', jump: -6 },
+    { la: 'O', ra: 'O', ll: 'S', rl: 'S', jump: -3 }, { la: 'D', ra: 'D', ll: 'Q', rl: 'Q', y: 2 }] },
+  { name: 'DAB', need: 3, hold: 2, poses: [
+    { la: 'PU', ra: 'F', ll: 'W', rl: 'W', hx: 1, y: 1 }, { la: 'D', ra: 'D', ll: 'S', rl: 'S' },
+    { la: 'F', ra: 'PU', ll: 'W', rl: 'W', hx: -1, y: 1 }, { la: 'D', ra: 'D', ll: 'S', rl: 'S' }] },
+  { name: 'SIRTAKI', need: 6, say: 'OPA!', poses: [
+    { la: 'O', ra: 'O', ll: 'S', rl: 'C', x: 1 }, { la: 'O', ra: 'O', ll: 'S', rl: 'K' },
+    { la: 'O', ra: 'O', ll: 'C', rl: 'S', x: -1 }, { la: 'O', ra: 'O', ll: 'K', rl: 'S' }] },
+];
+const AMARILDO_MOVES = [
+  { name: 'TOP ROCK', need: 0, poses: [
+    { la: 'G', ra: 'X', ll: 'C', rl: 'S', y: 1 }, { la: 'B', ra: 'B', ll: 'S', rl: 'W' },
+    { la: 'X', ra: 'G', ll: 'S', rl: 'C', y: 1 }, { la: 'B', ra: 'B', ll: 'W', rl: 'S' }] },
+  { name: 'DOUGIE', need: 0, poses: [
+    { la: 'HD', ra: 'D', ll: 'W', rl: 'S', x: -1, hx: -1, y: 1 }, { la: 'D', ra: 'D', ll: 'W', rl: 'W' },
+    { la: 'D', ra: 'HD', ll: 'S', rl: 'W', x: 1, hx: 1, y: 1 }, { la: 'D', ra: 'D', ll: 'W', rl: 'W' }] },
+  { name: 'FLOSS', need: 0, poses: [
+    { la: 'PD', ra: 'X', ll: 'W', rl: 'W', x: 1, hx: -1 }, { la: 'X', ra: 'PD', ll: 'W', rl: 'W', x: -1, hx: 1 }] },
+  { name: 'RUNNING MAN', need: 3, poses: [
+    { la: 'PF', ra: 'B', ll: 'L', rl: 'S' }, { la: 'D', ra: 'D', ll: 'S', rl: 'S', y: 2 },
+    { la: 'B', ra: 'PF', ll: 'S', rl: 'L' }, { la: 'D', ra: 'D', ll: 'S', rl: 'S', y: 2 }] },
+  { name: 'MOONWALK', need: 3, poses: [
+    { la: 'D', ra: 'B', ll: 'S', rl: 'P', x: 2 }, { la: 'D', ra: 'B', ll: 'P', rl: 'S', x: 1 },
+    { la: 'D', ra: 'B', ll: 'S', rl: 'P', x: 0 }, { la: 'D', ra: 'B', ll: 'P', rl: 'S', x: -1 },
+    { la: 'D', ra: 'B', ll: 'S', rl: 'P', x: -2 }, { la: 'B', ra: 'D', ll: 'P', rl: 'S', x: -1 },
+    { la: 'B', ra: 'D', ll: 'S', rl: 'P', x: 0 }, { la: 'B', ra: 'D', ll: 'P', rl: 'S', x: 1 }] },
+  { name: 'FREEZE', need: 6, hold: 2, say: 'SHEESH!', poses: [
+    { la: 'PU', ra: 'H', ll: 'Q', rl: 'Q', y: 3, hx: 1 }, { la: 'G', ra: 'G', ll: 'W', rl: 'W' },
+    { la: 'H', ra: 'PU', ll: 'Q', rl: 'Q', y: 3, hx: -1 }, { la: 'X', ra: 'X', ll: 'W', rl: 'W', y: 1 }] },
+];
+const EMY_MOVES = [
+  { name: 'KALAMATIANOS', need: 0, poses: [
+    { la: 'W', ra: 'U', ll: 'S', rl: 'W', k: 'R' }, { la: 'W', ra: 'U', ll: 'C', rl: 'S', x: 1, y: 1, k: 'R' },
+    { la: 'W', ra: 'U', ll: 'S', rl: 'W', x: 2, k: 'R' }, { la: 'W', ra: 'U', ll: 'S', rl: 'K', x: 2, k: 'R' },
+    { la: 'W', ra: 'U', ll: 'W', rl: 'S', x: 1, y: 1, k: 'R' }, { la: 'W', ra: 'U', ll: 'S', rl: 'S', k: 'R' }] },
+  { name: 'SYRTOS', need: 0, poses: [
+    { la: 'W', ra: 'W', ll: 'S', rl: 'W' }, { la: 'W', ra: 'W', ll: 'W', rl: 'S', x: 1, y: 1 },
+    { la: 'W', ra: 'W', ll: 'S', rl: 'C', x: 1 }, { la: 'W', ra: 'W', ll: 'S', rl: 'W', y: 1 },
+    { la: 'W', ra: 'W', ll: 'C', rl: 'S', x: -1 }, { la: 'W', ra: 'W', ll: 'W', rl: 'S', x: -1, y: 1 }] },
+  { name: 'TSAMIKO', need: 3, poses: [
+    { la: 'O', ra: 'U', ll: 'S', rl: 'K', k: 'R', jump: -3 }, { la: 'O', ra: 'U', ll: 'Q', rl: 'Q', k: 'R', y: 2 },
+    { la: 'O', ra: 'PU', ll: 'L', rl: 'S', k: 'R', jump: -2 }, { la: 'U', ra: 'O', ll: 'K', rl: 'S', k: 'L', jump: -3 },
+    { la: 'U', ra: 'O', ll: 'Q', rl: 'Q', k: 'L', y: 2 }, { la: 'PU', ra: 'O', ll: 'S', rl: 'L', k: 'L', jump: -2 }] },
+  { name: 'HASAPIKO', need: 3, poses: [
+    { la: 'O', ra: 'O', ll: 'S', rl: 'C' }, { la: 'O', ra: 'O', ll: 'S', rl: 'K' }, { la: 'O', ra: 'O', ll: 'S', rl: 'S', y: 1 },
+    { la: 'O', ra: 'O', ll: 'C', rl: 'S' }, { la: 'O', ra: 'O', ll: 'K', rl: 'S' }, { la: 'O', ra: 'O', ll: 'S', rl: 'S', y: 1 }] },
+  { name: 'PLATE SMASH', need: 6, say: 'OPA!', poses: [
+    { la: 'H', ra: 'PU', ll: 'W', rl: 'W', plate: 'R' }, { la: 'H', ra: 'PD', ll: 'W', rl: 'W', y: 1 },
+    { la: 'H', ra: 'X', ll: 'W', rl: 'W', y: 2 }, { la: 'PU', ra: 'H', ll: 'W', rl: 'W', plate: 'L' },
+    { la: 'PD', ra: 'H', ll: 'W', rl: 'W', y: 1 }, { la: 'X', ra: 'H', ll: 'W', rl: 'W', y: 2 }] },
+];
+
+/* ================= Sprite drawing ================= */
+const SW = 24; // sprite width, the mirror axis
+let OX = 0, OY = 0, SIL = null;
+function R(x, y, w, h, c, m) {
+  g.fillStyle = SIL && c !== K ? SIL : c;
+  g.fillRect(OX + (m ? SW - x - w : x), OY + y, w, h);
+}
+function walk(pts, fn) {
+  let i = 0;
+  for (let s = 0; s < pts.length - 1; s++) {
+    const [x0, y0] = pts[s], [x1, y1] = pts[s + 1];
+    const n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0), 1);
+    for (let k = s ? 1 : 0; k <= n; k++) fn(Math.round(x0 + (x1 - x0) * k / n), Math.round(y0 + (y1 - y0) * k / n), i++);
+  }
+  return i;
+}
+function arm(c, spec, m, by, kerchief) {
+  const b = c.body, sx = 6, sy = 15 + by, [ex, ey, hx, hy] = spec;
+  const pts = [[sx, sy], [sx - ex, sy + ey], [sx - hx, sy + hy]], [px, py] = pts[2];
+  const n = walk(pts, (x, y) => R(x - 2, y - 2, 4, 4, K, m));
+  R(px - 2, py - 2, 5, 5, K, m);
+  walk(pts, (x, y, i) => R(x - 1, y - 1, 2, 2, i < b.sleeve ? b.shirt : b.skin, m));
+  R(px - 1, py - 1, 3, 3, b.skin, m);
+  if (b.watch && !m) walk(pts, (x, y, i) => { if (i === n - 3) R(x - 1, y - 1, 2, 2, '#c9ced8', m); });
+  if (kerchief) { R(px - 2, py, 5, 6, K, m); R(px - 1, py + 1, 3, 4, '#d8343c', m); R(px - 1, py + 3, 3, 1, '#ffffff', m); }
+  return [OX + (m ? SW - px - 1 : px), OY + py];
+}
+function leg(c, spec, m, by) {
+  const b = c.body, w = b.legW, h = w >> 1;
+  const [fdx, fup, ko] = spec, hx = 9, hy = 24 + by, fx = 9 - fdx, fy = 31 - fup;
+  const pts = [[hx, hy], [Math.round((hx + fx) / 2) - ko, Math.round((hy + fy) / 2)], [fx, fy]];
+  walk(pts, (x, y) => R(x - h - 1, y - h - 1, w + 2, w + 2, K, m));
+  if (b.flare) R(fx - 4, fy - 2, 8, 4, K, m);
+  R(fx - 3, fy, 6, 4, K, m);
+  walk(pts, (x, y, i) => R(x - h, y - h, w, w, i < b.pantsLen ? b.pants : b.skin, m));
+  if (b.flare) R(fx - 3, fy - 1, 6, 2, b.pants, m);
+  R(fx - 2, fy + 1, 4, 2, b.shoe, m);
+}
+function torso(c, by) {
+  const b = c.body;
+  R(6, 13 + by, 12, 12, K);
+  R(7, 14 + by, 10, 10, b.shirt);
+  R(15, 14 + by, 2, 10, b.shade);
+  if (b.hi) R(7, 14 + by, 1, 9, b.hi);
+  R(10, 13 + by, 4, 1, b.skin);
+  if (b.detail) b.detail(by);
+  if (b.waist) R(7, 23 + by, 10, 1, b.waist);
+}
+function braid(c, by, hx) { // Emy's braid, hanging over the shoulder
+  const x = 16 + hx, y = 9 + by, p = c.pal;
+  R(x - 1, y - 1, 4, 12, K);
+  for (let i = 0; i < 10; i++) R(x, y + i, 2, 1, i === 8 ? '#c4485a' : i & 1 ? p.d : p.h);
+}
+const faceCache = {};
+function faceRows(c, face) {
+  const key = c.id + face;
+  if (faceCache[key]) return faceCache[key];
+  const rows = c.head.map(r => r.split(''));
+  const set = (r, col, v) => { if (rows[r] && rows[r][col] !== undefined) rows[r][col] = v; };
+  if (c.eyes) {
+    const [er, e1, e2] = c.eyes, [mr, mc] = c.mouth;
+    if (face === 'blink') { set(er, e1, 'S'); set(er, e2, 'S'); }
+    if (face === 'happy') for (const e of [e1, e2]) { set(er, e, 's'); set(er, e - 1, 'k'); set(er, e + 1, 'k'); set(er - 1, e, 'k'); }
+    if (face === 'happy' || face === 'open') {
+      for (let x = mc; x < mc + 4; x++) { set(mr, x, 'm'); set(mr + 1, x, 'm'); }
+      set(mr, mc + 1, 'w'); set(mr, mc + 2, 'w');
+    }
+    if (face === 'surprised') {
+      set(er + 1, e1, 'k'); set(er + 1, e2, 'k');
+      for (const x of [mc + 1, mc + 2]) { set(mr, x, 'm'); set(mr + 1, x, 'm'); }
+    }
+    if (face === 'cool') {
+      for (const e of [e1, e2]) {
+        for (let x = e - 1; x <= e + 1; x++) { set(er, x, 'g'); if (!c.glasses) set(er - 1, x, 'k'); }
+        set(er, e - 1, 'w');
+      }
+      if (!c.glasses) for (let x = e1 + 2; x < e2 - 1; x++) set(er - 1, x, 'k');
+      set(mr, mc + 2, 'm'); set(mr, mc + 3, 'm');
+    }
+  }
+  return (faceCache[key] = rows);
+}
+function head(x, y, c, face) {
+  const rows = faceRows(c, face), p = c.pal;
+  for (let r = 0; r < rows.length; r++)
+    for (let col = 0; col < rows[r].length; col++) {
+      const ch = rows[r][col];
+      if (ch === '.') continue;
+      g.fillStyle = SIL && ch !== 'k' ? SIL : p[ch];
+      g.fillRect(x + col, y + r, 1, 1);
+    }
+}
+function drawChar(c, ox, oy, p, face) {
+  OX = ox + (p.x || 0); OY = oy + (p.jump || 0);
+  const by = p.y || 0, hx = p.hx || 0;
+  leg(c, LEG[p.ll], false, by); leg(c, LEG[p.rl], true, by);
+  torso(c, by);
+  if (c.braid) braid(c, by, hx);
+  head(OX + 5 + hx, OY + by + (p.hy || 0) + (c.headDY || 0), c, face);
+  const L = arm(c, ARM[p.la], false, by, p.k === 'L'), Rh = arm(c, ARM[p.ra], true, by, p.k === 'R');
+  return { x: OX, y: OY, by, hx, dy: c.headDY || 0, hands: { L, R: Rh } };
+}
+function sprite(rows, x, y, col) {
+  g.fillStyle = K;
+  rows.forEach((row, r) => { for (let i = 0; i < row.length; i++) if (row[i] === '#') g.fillRect(x + i - 1, y + r - 1, 3, 3); });
+  g.fillStyle = col;
+  rows.forEach((row, r) => { for (let i = 0; i < row.length; i++) if (row[i] === '#') g.fillRect(x + i, y + r, 1, 1); });
+}
+
+/* ================= Music =================
+   Three original loops. Triangle bass, two pulse channels, noise drums. */
+const BPM_DISCO = 124;
+const DISCO_BASS = [45, 41, 48, 43];
+const DISCO_ARP = [[57, 60, 64], [53, 57, 60], [55, 60, 64], [55, 59, 62]];
+const DISCO_LEAD = new Map([
+  [0, [76, 2]], [2, [81, 2]], [4, [79, 1]], [5, [76, 2]], [7, [74, 1]], [8, [76, 3]], [11, [72, 2]], [13, [74, 3]],
+  [16, [72, 2]], [18, [77, 2]], [20, [76, 1]], [21, [72, 2]], [23, [69, 1]], [24, [72, 4]], [28, [69, 2]], [30, [72, 2]],
+  [32, [76, 2]], [34, [79, 2]], [36, [84, 2]], [38, [79, 1]], [39, [76, 1]], [40, [79, 3]], [43, [76, 1]], [44, [74, 2]], [46, [72, 2]],
+  [48, [71, 2]], [50, [74, 2]], [52, [79, 2]], [54, [81, 1]], [55, [79, 1]], [56, [74, 3]], [59, [71, 1]], [60, [74, 1]], [61, [76, 3]],
+]);
+const BB_ROOT = [48, 48, 44, 46]; // Cm Cm Ab Bb
+const BB_BASS = new Map([[0, [0, 3]], [3, [0, 1]], [7, [12, 2]], [10, [0, 2]], [13, [3, 2]]]);
+const BB_CHORDS = [[60, 63, 67], [60, 63, 67], [56, 60, 63], [58, 62, 65]];
+const BB_LEAD = new Map([
+  [0, [72, 3]], [4, [75, 2]], [6, [72, 2]], [10, [70, 2]], [12, [67, 4]],
+  [18, [70, 2]], [20, [72, 2]], [22, [75, 2]], [24, [77, 3]], [28, [75, 2]], [30, [72, 2]],
+  [32, [68, 3]], [36, [72, 2]], [38, [75, 2]], [42, [72, 2]], [44, [68, 4]],
+  [48, [70, 3]], [52, [74, 2]], [54, [77, 2]], [56, [74, 2]], [58, [70, 2]], [60, [67, 4]],
+]);
+// Kalamatianos: 7/8 counted 3+2+2, D hijaz (D Eb F# G A Bb C). One step = one eighth note.
+const KL_BARS = [{ root: 50, chord: [62, 66, 69] }, { root: 48, chord: [60, 63, 67] }, { root: 43, chord: [55, 58, 62] }, { root: 50, chord: [62, 66, 69] }];
+const KL_LEAD = new Map([
+  [0, [69, 3]], [3, [67, 1]], [4, [66, 1]], [5, [67, 1]], [6, [69, 1]],
+  [7, [70, 3]], [10, [69, 1]], [11, [67, 1]], [12, [69, 1]], [13, [70, 1]],
+  [14, [74, 2]], [16, [72, 1]], [17, [70, 2]], [19, [69, 1]], [20, [67, 1]],
+  [21, [66, 1]], [22, [63, 1]], [23, [66, 1]], [24, [62, 2]], [26, [66, 1]], [27, [67, 1]],
+]);
+
+const EIGHTHS = [0, 2, 4, 6, 8, 10, 12, 14];
+const SONGS = {
+  disco: { step: 60 / BPM_DISCO / 4, bar: 16, beats: [0, 4, 8, 12], hits: EIGHTHS, moveBars: 1, swing: 0, battleBars: 4,
+    play(n, t, dance) {
+      const s = n % 16, bar = (n >> 4) & 3;
+      if (!(s & 1)) voice('triangle', mtof(DISCO_BASS[bar] + (s & 2 ? 12 : 0)), t, STEP * 1.7, dance ? 0.5 : 0.38);
+      if (dance ? s % 4 === 0 : s % 8 === 0) kick(t, dance ? 0.8 : 0.55);
+      if (dance) {
+        if (s === 4 || s === 12) snare(t, 0.3);
+        if (s % 4 === 2) hat(t, 0.08, 0.1); else hat(t, 0.025, 0.05);
+        const L = DISCO_LEAD.get(n & 63);
+        if (L) {
+          const d = L[1] * STEP * 0.92;
+          voice(pulse25, mtof(L[0]), t, d, 0.12);
+          voice(pulse125, mtof(L[0]), t + STEP * 3, d, 0.035); // NES-style echo
+        }
+        voice(pulse125, mtof(DISCO_ARP[bar][[0, 1, 2, 1][s % 4]] + 12), t, STEP * 0.8, 0.04);
+      } else if (s % 4 === 2) hat(t, 0.03, 0.05);
+    },
+    tap(t) { [84, 88, 91, 96].forEach((m, i) => voice(pulse25, mtof(m), t + i * 0.035, 0.05, 0.06)); } },
+  boombap: { step: 60 / 92 / 4, bar: 16, beats: [0, 4, 8, 12], hits: EIGHTHS, moveBars: 1, swing: 0.22, battleBars: 3,
+    play(n, t, dance) {
+      const s = n % 16, bar = (n >> 4) & 3, B = BB_BASS.get(s);
+      if (B) voice('triangle', mtof(BB_ROOT[bar] + B[0]), t, STEP * B[1], 0.55);
+      if (s === 0 || s === 7 || s === 10) kick(t, dance ? 0.95 : 0.7);
+      if (s === 4 || s === 12) snare(t, dance ? 0.38 : 0.26);
+      if (!(s & 1)) hat(t, s === 14 && dance ? 0.12 : 0.03, s % 4 === 2 ? 0.07 : 0.04);
+      if (dance) {
+        if (s === 0 || s === 6 || s === 11) BB_CHORDS[bar].forEach(m => voice(pulse125, mtof(m), t, STEP * (s === 6 ? 1 : 2.5), 0.03));
+        const L = BB_LEAD.get(n & 63);
+        if (L) voice(pulse25, mtof(L[0]), t, L[1] * STEP * 0.9, 0.1, 0, true);
+      }
+    },
+    tap(t) { scratch(t, 0.13); } },
+  kalamatianos: { step: 0.15, bar: 7, beats: [0, 3, 5], hits: [0, 3, 5], moveBars: 2, swing: 0, battleBars: 8,
+    play(n, t, dance) {
+      const s = n % 7, ch = KL_BARS[Math.floor(n / 7) % 4];
+      if (s === 0) voice('triangle', mtof(ch.root), t, STEP * 2.6, 0.5);
+      if (s === 3 || s === 5) voice('triangle', mtof(ch.root + 7), t, STEP * 1.7, 0.4);
+      if (s === 0) kick(t, 0.85);                     // doum
+      else if (s === 3 || s === 5) snare(t, 0.2);     // tek
+      else hat(t, 0.03, 0.04);
+      if (dance) {
+        if (s !== 0 && s !== 3 && s !== 5) ch.chord.forEach(m => voice(pulse125, mtof(m), t, STEP * 0.7, 0.025));
+        const L = KL_LEAD.get(n % 28);
+        if (L) voice(pulse25, mtof(L[0]), t, L[1] * STEP * 0.95, 0.12, 0, true);
+      }
+    },
+    tap(t) { clap(t); } },
+};
+
+let muted = !!store.get('fanis_muted', false);
+let song = SONGS.disco, STEP = song.step;
+let ctx = null, master = null, noiseBuf = null, pulse25 = null, pulse125 = null;
+let started = false, running = false, src = 'perf', audioLag = 0, anchorClock = 0, anchorStep = 0, nextStep = 0;
+const VOL = 0.55;
+const clockNow = () => src === 'audio' ? ctx.currentTime : perf();
+// What you hear lags the audio clock by the output latency; visuals and judging follow what you hear.
+const stepNow = () => running ? anchorStep + (clockNow() - (src === 'audio' ? audioLag : 0) - anchorClock) / STEP : -1;
+const schedStep = () => anchorStep + (clockNow() - anchorClock) / STEP;
+const lagOf = () => Math.min(0.25, Math.max(0, (ctx.outputLatency || 0) + (ctx.baseLatency || 0)));
+const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
+
+function reanchor(to) {
+  const s = Math.max(0, stepNow());
+  src = to;
+  if (to === 'audio') audioLag = lagOf();
+  anchorStep = s; anchorClock = clockNow() - (to === 'audio' ? audioLag : 0);
+  nextStep = Math.max(nextStep, Math.ceil(s));
+}
+function setSong(s) {
+  song = s; STEP = s.step;
+  danceEnd = -1; danceAudioStart = Infinity; move = null;
+  if (!running) return;
+  if (src === 'audio') audioLag = lagOf();
+  anchorClock = clockNow() + 0.06; anchorStep = 0; nextStep = 0;
+}
+function pulseWave(duty) {
+  const n = 32, re = new Float32Array(n), im = new Float32Array(n);
+  for (let k = 1; k < n; k++) re[k] = 2 / (k * Math.PI) * Math.sin(k * Math.PI * duty);
+  return ctx.createPeriodicWave(re, im);
+}
+// iOS mutes Web Audio while the ring switch is on silent. A looping (silent) media element moves the page
+// into the "playback" audio session, which plays through the switch like a video would.
+let htmlAudio = null;
+function silentWav() {
+  const n = 800, b = new Uint8Array(44 + n), v = new DataView(b.buffer);
+  const w = (o, t) => { for (let i = 0; i < t.length; i++) b[o + i] = t.charCodeAt(i); };
+  w(0, 'RIFF'); v.setUint32(4, 36 + n, true); w(8, 'WAVE'); w(12, 'fmt '); v.setUint32(16, 16, true);
+  v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, 8000, true); v.setUint32(28, 8000, true);
+  v.setUint16(32, 1, true); v.setUint16(34, 8, true); w(36, 'data'); v.setUint32(40, n, true); b.fill(128, 44);
+  let str = ''; b.forEach(x => { str += String.fromCharCode(x); });
+  return 'data:audio/wav;base64,' + btoa(str);
+}
+function unlockMedia() {
+  try {
+    if (!htmlAudio) { htmlAudio = new Audio(silentWav()); htmlAudio.loop = true; htmlAudio.setAttribute('playsinline', ''); htmlAudio.setAttribute('webkit-playsinline', ''); }
+    if (htmlAudio.paused && !document.hidden) { const p = htmlAudio.play(); if (p && p.catch) p.catch(() => {}); }
+  } catch (e) {}
+}
+function startMusic() {
+  unlockMedia();
+  if (started) { resumeAudio(); return; }
+  started = true;
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (AC) {
+      try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}
+      ctx = new AC();
+      master = ctx.createGain(); master.gain.value = muted ? 0 : VOL;
+      const comp = ctx.createDynamicsCompressor();
+      master.connect(comp); comp.connect(ctx.destination);
+      noiseBuf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
+      const d = noiseBuf.getChannelData(0);
+      for (let i = 0, v = 0; i < d.length; i++) { if (!(i & 1)) v = Math.random() < 0.5 ? -1 : 1; d[i] = v; }
+      pulse25 = pulseWave(0.25); pulse125 = pulseWave(0.125);
+      const unlock = ctx.createBufferSource(); unlock.buffer = ctx.createBuffer(1, 1, 22050);
+      unlock.connect(ctx.destination); unlock.start(0);
+    }
+  } catch (e) { ctx = null; }
+  // The beat starts on the page clock at once and moves to the audio clock when audio is allowed to run.
+  running = true; src = 'perf'; anchorClock = perf(); anchorStep = 0; nextStep = 0;
+  resumeAudio();
+}
+function resumeAudio() {
+  unlockMedia();
+  if (!ctx || (ctx.state === 'running' && src === 'audio')) return;
+  const done = () => { if (ctx.state === 'running' && src !== 'audio') reanchor('audio'); updateMuteLabel(); };
+  try { const p = ctx.resume(); if (p && p.then) p.then(done, () => {}); else done(); } catch (e) {}
+}
+function tick() {
+  if (!running) return;
+  if (src === 'audio' && ctx.state !== 'running' && !document.hidden) reanchor('perf');
+  const horizon = schedStep() + 0.1 / STEP;
+  while (nextStep < horizon) {
+    if (src === 'audio') {
+      const t = anchorClock + (nextStep - anchorStep) * STEP + (nextStep & 1 ? song.swing * STEP : 0);
+      if (t > ctx.currentTime - 0.02) song.play(nextStep, Math.max(t, ctx.currentTime), nextStep >= danceAudioStart && nextStep < danceEnd);
+      if (nextStep === danceAudioStart) noise(Math.max(t, ctx.currentTime), 1, 0.18, 3000); // crash on the drop
+    }
+    nextStep++;
+  }
+}
+function voice(wave, f, t, d, v, f2, vib) {
+  const o = ctx.createOscillator(), a = ctx.createGain();
+  if (typeof wave === 'string') o.type = wave; else o.setPeriodicWave(wave);
+  o.frequency.setValueAtTime(f, t);
+  if (f2) o.frequency.exponentialRampToValueAtTime(f2, t + d);
+  if (vib && d > 0.2) {
+    const l = ctx.createOscillator(), lg = ctx.createGain();
+    l.frequency.value = 5.5; lg.gain.setValueAtTime(0, t); lg.gain.linearRampToValueAtTime(f * 0.012, t + d * 0.6);
+    l.connect(lg); lg.connect(o.frequency); l.start(t); l.stop(t + d + 0.02);
+  }
+  a.gain.setValueAtTime(0, t);
+  a.gain.linearRampToValueAtTime(v, t + 0.004);
+  a.gain.setValueAtTime(v, t + d * 0.55);
+  a.gain.linearRampToValueAtTime(0, t + d);
+  o.connect(a); a.connect(master);
+  o.start(t); o.stop(t + d + 0.02);
+}
+function noise(t, d, v, hp) {
+  const s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), a = ctx.createGain();
+  s.buffer = noiseBuf; f.type = 'highpass'; f.frequency.value = hp;
+  a.gain.setValueAtTime(v, t); a.gain.exponentialRampToValueAtTime(0.001, t + d);
+  s.connect(f); f.connect(a); a.connect(master);
+  s.start(t, Math.random() * 0.5); s.stop(t + d + 0.02);
+}
+function scratch(t, d) {
+  const s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), a = ctx.createGain();
+  s.buffer = noiseBuf; f.type = 'bandpass'; f.Q.value = 6;
+  f.frequency.setValueAtTime(500, t); f.frequency.exponentialRampToValueAtTime(3200, t + d * 0.45); f.frequency.exponentialRampToValueAtTime(600, t + d);
+  a.gain.setValueAtTime(0.0001, t); a.gain.linearRampToValueAtTime(0.5, t + 0.01); a.gain.linearRampToValueAtTime(0.0001, t + d);
+  s.connect(f); f.connect(a); a.connect(master);
+  s.start(t, Math.random() * 0.5); s.stop(t + d + 0.02);
+}
+const kick = (t, v) => { voice('triangle', 190, t, 0.13, v, 45); noise(t, 0.02, 0.15, 2000); };
+const snare = (t, v) => { noise(t, 0.14, v, 1500); voice('triangle', 230, t, 0.07, v * 0.8, 140); };
+const hat = (t, d, v) => noise(t, d, v, 8000);
+const clap = t => { noise(t, 0.04, 0.3, 1200); noise(t + 0.012, 0.04, 0.25, 1200); noise(t + 0.024, 0.12, 0.25, 1000); };
+function sfx(kind) {
+  if (!ctx || ctx.state !== 'running' || src !== 'audio') return;
+  const t = ctx.currentTime + 0.005;
+  if (kind === 'tap') song.tap(t);
+  if (kind === 'poke') voice(pulse25, 520, t, 0.16, 0.1, 160);
+  if (kind === 'blip') voice(pulse25, 880, t, 0.05, 0.07);
+  if (kind === 'start') [60, 67, 72, 79].forEach((m, i) => voice(pulse25, mtof(m), t + i * 0.06, 0.08, 0.09));
+  if (kind === 'new') [72, 76, 79, 84, 88, 91].forEach((m, i) => voice(pulse25, mtof(m), t + i * 0.05, 0.07, 0.08));
+  if (kind === 'unlock') [67, 72, 76, 79, 84, 79, 84, 88].forEach((m, i) => voice(pulse25, mtof(m), t + i * 0.09, 0.12, 0.1));
+  if (kind === 'phew') voice(pulse125, 700, t, 0.3, 0.06, 250);
+  if (kind === 'plate') { noise(t, 0.25, 0.3, 2500); noise(t + 0.03, 0.15, 0.2, 5000); }
+}
+function updateMuteLabel() {
+  E.mute.textContent = muted ? 'SOUND OFF' : started && ctx && ctx.state !== 'running' ? 'TAP FOR SOUND' : 'SOUND ON';
+}
+function setMute(m) {
+  muted = m; store.set('fanis_muted', m);
+  updateMuteLabel();
+  if (master) master.gain.setTargetAtTime(m ? 0 : VOL, ctx.currentTime, 0.02);
+}
+document.addEventListener('visibilitychange', () => {
+  if (!ctx) return;
+  if (document.hidden) { if (ctx.state === 'running') ctx.suspend(); if (htmlAudio) htmlAudio.pause(); }
+  else if (started) resumeAudio();
+});
+
+/* ================= Fighters ================= */
+const FANIS = {
+  id: 'fanis', name: 'FANIS', tag: 'DISCO KING', hint: 'TAP HIS HEAD',
+  head: FANIS_HEAD, eyes: [7, 4, 9], mouth: [10, 5],
+  pal: { k: K, h: '#2a1c15', b: '#2e1f18', s: '#e8b28c', S: '#c98e68', m: '#7a2424', w: '#ffffff', g: GLASS },
+  body: { skin: '#e8b28c', shirt: '#34343e', shade: '#25252d', hi: '#4b4b59', sleeve: 3, pants: '#ebe5d6', pantsLen: 3, shoe: '#f4f4f4', legW: 3, watch: true,
+    detail: by => { R(10, 14 + by, 4, 1, '#e8b28c'); R(11, 15 + by, 2, 2, '#e8b28c'); } }, // black V-neck
+  song: SONGS.disco, floor: PARTY, moves: FANIS_MOVES, stage: 'village',
+  shouts: ['OPA!', 'YEAH!', 'WOO!', 'FUNKY!', 'YIA SOU!', 'LET\'S GO!'],
+  pokes: ['HEY!', 'OI!', 'HEHE', 'NOT THERE!', 'THE HEAD!'],
+};
+const HOODIE_PRINT = ['#.##.###', '##.#..#.', '#.###.##'];
+const AMARILDO = {
+  id: 'amarildo', name: 'AMARILDO', tag: 'HIP-HOP HEAD', hint: 'TAP AMARILDO\'S HEAD', glasses: true,
+  head: AMARILDO_HEAD, headDY: -2, eyes: [9, 4, 9], mouth: [12, 5],
+  pal: { k: K, h: '#8a6848', H: '#b38c63', s: '#f0c19e', S: '#d59f7c', t: '#c9987a', y: '#d8b25a', m: '#a8504a', w: '#ffffff', g: GLASS },
+  body: { skin: '#f0c19e', shirt: '#2f2f38', shade: '#22222a', hi: '#454552', sleeve: 99, pants: '#8b91a3', pantsLen: 99, shoe: '#f4f4f4', legW: 3, waist: '#1d1d24',
+    detail: by => { // hood, drawstrings and the white print on the chest
+      R(8, 14 + by, 8, 1, '#4a4a58'); R(8, 15 + by, 1, 1, '#4a4a58'); R(15, 15 + by, 1, 1, '#4a4a58');
+      R(10, 15 + by, 1, 3, '#e8e8e8'); R(13, 15 + by, 1, 3, '#e8e8e8');
+      HOODIE_PRINT.forEach((row, r) => { for (let i = 0; i < 8; i++) if (row[i] === '#') R(8 + i, 18 + r + by, 1, 1, '#efe9dc'); });
+      R(9, 22 + by, 6, 1, '#1d1d24');
+    } },
+  stage: 'street', song: SONGS.boombap, floor: ['#ffd35a', '#ff4f7b', '#8cff5a', '#ffffff', '#4fd8ff'], moves: AMARILDO_MOVES,
+  shouts: ['YO!', 'AYY!', 'DOPE!', 'SHEESH!', 'WORD!'],
+  pokes: ['YO, CHILL', 'BRO?', 'NAH', 'EASY!', 'THE HEAD, BRO'],
+  req: 'HIT 8 PERFECT BEATS IN A ROW', unlockLine: 'AMARILDO FELT THE BEAT',
+  progress: () => 'BEST STREAK ' + Math.min(bestStreak, 8) + '/8',
+};
+const EMY = {
+  id: 'emy', name: 'MAMA EMY', tag: 'TRADITIONAL QUEEN', hint: 'TAP EMY\'S HEAD', braid: true,
+  head: EMY_HEAD, eyes: [7, 4, 9], mouth: [10, 5],
+  pal: { k: K, h: '#e0b85c', H: '#f6dc90', d: '#b88f3c', s: '#f4d0b6', S: '#dca98c', r: '#f2a3a0', l: '#c4485a', e: '#ffd35a', m: '#8a2323', w: '#ffffff', g: GLASS },
+  body: { skin: '#f4d0b6', shirt: '#f6f2ea', shade: '#d8d1c3', sleeve: 99, pants: '#25252d', pantsLen: 99, shoe: '#3a302b', legW: 4, flare: true, waist: '#25252d',
+    detail: by => { R(10, 14 + by, 4, 1, '#f4d0b6'); R(11, 15 + by, 2, 1, '#ffd35a'); } },
+  stage: 'taverna', song: SONGS.kalamatianos, floor: ['#2f6fd6', '#ffffff', '#5c94fc', '#ffffff'], moves: EMY_MOVES,
+  shouts: ['OPA!', 'ELA!', 'BRAVO!', 'AMAN!', 'YIA SOU!'],
+  pokes: ['BEHAVE!', 'EAT SOMETHING!', 'PUT A JACKET ON!', 'THE HEAD, AGAPI MOU!'],
+  req: 'KEEP ONE PARTY GOING FOR 60 SECONDS', unlockLine: 'MAMA EMY HEARD THE NOISE',
+  progress: () => 'LONGEST PARTY ' + fmtTime(Math.min(bestParty, 60)) + ' / 1:00',
+};
+const ROSTER = [FANIS, AMARILDO, EMY];
+for (let i = 0; i < 12; i++) ROSTER.push({ id: 'soon' + i, name: '???', soon: true, head: MASKS[i % MASKS.length], headDY: -1, pal: { k: K, h: '#444' }, body: FANIS.body });
+
+let unlocked = new Set(['fanis', ...store.get('fanis_unlocked', [])]);
+let fresh = new Set(store.get('fanis_new', []));
+let bestStreak = store.get('fanis_best_streak', 0) | 0, bestParty = +store.get('fanis_best_party', 0) || 0;
+let bestCombo = store.get('fanis_best_combo', 0) | 0, battlesWon = store.get('fanis_battles_won', 0) | 0, plates = store.get('fanis_plates', 0) | 0;
+let earned = new Set(store.get('fanis_trophies', []));
+const TROPHIES = [
+  { id: 'first', name: 'FIRST STEPS', desc: 'START A DANCE' },
+  { id: 'shades', name: 'SHADES ON', desc: 'REACH A 12 COMBO' },
+  { id: 'onbeat', name: 'ON THE BEAT', desc: '4 PERFECT BEATS IN A ROW' },
+  { id: 'metro', name: 'HUMAN METRONOME', desc: '16 PERFECT BEATS IN A ROW' },
+  { id: 'party', name: 'PARTY ANIMAL', desc: 'KEEP ONE PARTY GOING FOR 1 MINUTE' },
+  { id: 'marathon', name: 'MARATHON', desc: 'KEEP ONE PARTY GOING FOR 3 MINUTES' },
+  { id: 'opa', name: 'OPA!', desc: 'DO THE SIRTAKI' },
+  { id: 'moon', name: 'MOONWALKER', desc: 'PULL OFF A MOONWALK' },
+  { id: 'plates', name: 'PLATE BREAKER', desc: 'SMASH 50 PLATES' },
+  { id: 'crew', name: 'CREW LOVE', desc: 'GET BACKUP DANCERS ON STAGE' },
+  { id: 'squad', name: 'FULL SQUAD', desc: 'UNLOCK EVERY FIGHTER' },
+  { id: 'winner', name: 'DANCE-OFF CHAMP', desc: 'WIN A DANCE-OFF' },
+  { id: 'flawless', name: 'FLAWLESS', desc: 'SCORE 100% IN A DANCE-OFF TURN' },
+];
+const status = c => c.soon ? 'soon' : unlocked.has(c.id) ? 'open' : 'locked';
+
+/* ================= Scene ================= */
+let P = 6, LW = 60, LH = 100, floorTop = 80, groundY = 84, cvLeft = 0, ballTop = 20;
+const bg = document.createElement('canvas');
+let bgKey = null, bulbs = [], stars = [], clouds = [], moon = { x: 0, y: 0 }, ballY = -14;
+const SKY_DAY = ['#4a80f0', '#5c94fc', '#7eaafd', '#a9c8ff'];
+const SKY_NIGHT = ['#0b0b1e', '#15103a', '#261750', '#3d1f63'];
+const mq = window.matchMedia ? matchMedia('(prefers-color-scheme: dark)') : null;
+function isNight() {
+  const t = document.documentElement.getAttribute('data-theme');
+  if (t === 'dark') return true;
+  if (t === 'light') return false;
+  return !!(mq && mq.matches);
+}
+function rng(seed) {
+  return () => {
+    seed = (seed + 0x6D2B79F5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function resize() {
+  const vw = innerWidth, vh = innerHeight;
+  P = Math.max(2, Math.floor(Math.min(vw / 48, vh / 90)));
+  LW = Math.ceil(vw / P); LH = Math.ceil(vh / P);
+  cv.width = LW; cv.height = LH;
+  cv.style.width = LW * P + 'px'; cv.style.height = LH * P + 'px';
+  cvLeft = Math.floor((vw - LW * P) / 2); cv.style.left = cvLeft + 'px';
+  floorTop = LH - Math.max(14, Math.round(LH * 0.2));
+  groundY = floorTop + 4;
+  const r = rng(99);
+  stars = Array.from({ length: Math.round(LW * floorTop / 70) }, () => ({
+    x: r() * LW | 0, y: 1 + r() * Math.max(4, floorTop - 30) | 0, p: r() * 7, big: r() < 0.12 }));
+  clouds = Array.from({ length: 3 }, () => ({
+    x: r() * LW, y: 3 + r() * Math.max(2, Math.min(20, floorTop - 34)) | 0, w: 12 + (r() * 10 | 0), v: 1 + r() * 1.5 }));
+  measureHud();
+  fitTitle();
+}
+function measureHud() {
+  const b = E.hint.getBoundingClientRect().bottom;
+  if (b > 0) ballTop = Math.ceil(b / P) + 6;
+  else ballTop = Math.round(floorTop * 0.3);
+  bgKey = null;
+}
+function disc(c, x, y, r, col) {
+  c.fillStyle = col;
+  for (let dy = -r; dy <= r; dy++) { const hw = Math.round(Math.sqrt(r * r - dy * dy)); c.fillRect(x - hw, y + dy, hw * 2 + 1, 1); }
+}
+function buildBg(night, stage) {
+  bgKey = (night ? 'n' : 'd') + stage; bulbs = [];
+  bg.width = LW; bg.height = LH;
+  const c = bg.getContext('2d');
+  const sky = night ? SKY_NIGHT : SKY_DAY, bh = Math.ceil(floorTop / sky.length);
+  sky.forEach((col, i) => { c.fillStyle = col; c.fillRect(0, i * bh, LW, bh + 1); });
+  for (let i = 1; i < sky.length; i++) { // two-row dither between bands
+    const y = i * bh;
+    c.fillStyle = sky[i];
+    for (let x = 0; x < LW; x++) { if (!(x & 1)) c.fillRect(x, y - 1, 1, 1); if ((x & 3) === 1) c.fillRect(x, y - 2, 1, 1); }
+    c.fillStyle = sky[i - 1];
+    for (let x = 3; x < LW; x += 4) c.fillRect(x, y, 1, 1);
+  }
+  moon = { x: Math.round(LW * 0.82), y: Math.min(ballTop, floorTop - 32) };
+  if (night) {
+    disc(c, moon.x, moon.y, 4, '#f3ecc8');
+    disc(c, moon.x + 2, moon.y - 1, 3, sky[Math.max(0, Math.min(sky.length - 1, Math.floor((moon.y - 1) / bh)))]);
+  } else {
+    disc(c, moon.x, moon.y, 5, '#ffcf3f');
+    disc(c, moon.x - 1, moon.y - 1, 2, '#fff1a8');
+  }
+  if (stage === 'street') street(c, night);
+  else if (stage === 'taverna') taverna(c, night);
+  else village(c, night);
+}
+function village(c, night) { // Fanis: a Cycladic village, a back row on the hill and a front row on the street
+  const r = rng(1234);
+  for (const front of [false, true]) {
+    const base = floorTop - (front ? 0 : 6);
+    let x = -(r() * 5 | 0);
+    while (x < LW) {
+      const w = 6 + (r() * 7 | 0), h = (front ? 5 : 8) + (r() * (front ? 6 : 7) | 0);
+      house(c, r, x, base, w, h, front, night);
+      x += w + (r() < 0.3 ? 2 : 0);
+    }
+  }
+}
+function street(c, night) { // Amarildo: towers behind a graffiti brick wall under a street lamp
+  const r = rng(77), wallTop = floorTop - Math.min(24, Math.round(floorTop * 0.34));
+  for (let x = -(r() * 6 | 0); x < LW;) {
+    const w = 8 + (r() * 10 | 0), h = 8 + (r() * Math.max(6, floorTop * 0.3) | 0), top = wallTop - h;
+    c.fillStyle = night ? '#23244a' : '#8f98bf'; c.fillRect(x, top, w, floorTop - top);
+    for (let wy = top + 2; wy < wallTop - 1; wy += 3) for (let wx = x + 1; wx < x + w - 1; wx += 3)
+      if (r() < 0.5) { c.fillStyle = night ? (r() < 0.4 ? '#ffd35a' : '#34365e') : '#b9c1e0'; c.fillRect(wx, wy, 1, 1); }
+    x += w + (r() * 3 | 0);
+  }
+  const brick = night ? '#6a3346' : '#b0573f', mortar = night ? '#452233' : '#7e3b2c', hi = night ? '#7d3d53' : '#c4684d';
+  c.fillStyle = mortar; c.fillRect(0, wallTop, LW, floorTop - wallTop);
+  for (let y = wallTop + 1, row = 0; y < floorTop; y += 3, row++)
+    for (let x = row & 1 ? -3 : 0; x < LW; x += 6) { c.fillStyle = hi; c.fillRect(x, y, 5, 1); c.fillStyle = brick; c.fillRect(x, y + 1, 5, 1); }
+  c.fillStyle = night ? '#3a1d2a' : '#6e3326'; c.fillRect(0, wallTop, LW, 1);
+  const TAGS = ['#ff4f7b', '#4fd8ff', '#8cff5a', '#ffd35a', '#b36bff'], out = '#1b1024';
+  const n = Math.max(2, Math.round(LW / 28));
+  for (let k = 0; k < n; k++) { // bubble-letter tags with drips
+    const w = 9 + (r() * 8 | 0), h = 5 + (r() * 3 | 0);
+    const x = Math.round((k + 0.5) * LW / n - w / 2 + (r() - 0.5) * 6), y = wallTop + 3 + (r() * Math.max(1, floorTop - wallTop - h - 7) | 0);
+    const col = TAGS[r() * TAGS.length | 0];
+    c.fillStyle = out; c.fillRect(x - 1, y, w + 2, h); c.fillRect(x, y - 1, w, h + 2);
+    c.fillStyle = col; c.fillRect(x, y, w, h);
+    c.fillStyle = out; for (let lx = x + 3; lx < x + w - 1; lx += 3 + (r() * 2 | 0)) c.fillRect(lx, y + 1, 1, h - 2);
+    c.fillStyle = '#ffffff'; c.fillRect(x + 1, y + 1, 1, 1);
+    c.fillStyle = col; for (let d = 0; d < 2; d++) c.fillRect(x + 1 + (r() * (w - 2) | 0), y + h, 1, 1 + (r() * 3 | 0));
+  }
+  const lx = Math.max(3, Math.round(LW * 0.08)), ly = wallTop - 9;
+  c.fillStyle = '#2b2b36'; c.fillRect(lx, ly, 1, floorTop - ly); c.fillRect(lx, ly, 4, 1);
+  c.fillStyle = night ? '#ffe28a' : '#d8d8e0'; c.fillRect(lx + 3, ly + 1, 3, 2);
+  if (night) {
+    c.fillStyle = 'rgba(255,226,138,.3)';
+    for (let y = ly + 3; y < floorTop; y++) { const hw = (y - ly) >> 2; for (let x = lx + 4 - hw; x <= lx + 4 + hw; x++) if ((x + y) % 3 === 0) c.fillRect(x, y, 1, 1); }
+  }
+}
+function taverna(c, night) { // Emy: a whitewashed taverna, blue shutters, bougainvillea, string lights, kafeneio chairs
+  const r = rng(55), wallTop = floorTop - Math.min(28, Math.round(floorTop * 0.4));
+  const wall = night ? '#8f8bab' : '#f5f0e6', shade = night ? '#77739a' : '#e2dac9', blue = night ? '#2a4a93' : '#2f6fd6';
+  c.fillStyle = night ? '#7a3b33' : '#c0603f'; c.fillRect(0, wallTop - 3, LW, 2);
+  c.fillStyle = night ? '#5a2a26' : '#8f4430'; for (let x = 0; x < LW; x += 3) c.fillRect(x, wallTop - 3, 1, 2);
+  c.fillRect(0, wallTop - 1, LW, 1);
+  c.fillStyle = wall; c.fillRect(0, wallTop, LW, floorTop - wallTop);
+  c.fillStyle = shade; c.fillRect(0, floorTop - 3, LW, 3);
+  const spots = LW < 90 ? [0.16, 0.84] : [0.12, 0.3, 0.7, 0.88];
+  for (const f of spots) {
+    const x = Math.round(LW * f) - 5, y = wallTop + 4, h = Math.max(6, Math.min(11, floorTop - wallTop - 14));
+    c.fillStyle = K; c.fillRect(x - 1, y - 1, 12, h + 2);
+    c.fillStyle = night ? '#ffd35a' : '#2a2f4d'; c.fillRect(x + 3, y, 4, h);
+    c.fillStyle = blue; c.fillRect(x, y, 3, h); c.fillRect(x + 7, y, 3, h);
+    c.fillStyle = night ? '#1f3a78' : '#24539f';
+    for (let sy = y + 1; sy < y + h; sy += 2) { c.fillRect(x, sy, 3, 1); c.fillRect(x + 7, sy, 3, 1); }
+    const tx = Math.round(LW * f) - 3, ty = floorTop - 5; // table with a checked cloth, and a chair
+    c.fillStyle = K; c.fillRect(tx - 1, ty - 1, 9, 4);
+    for (let i = 0; i < 7; i++) { c.fillStyle = i & 1 ? blue : '#ffffff'; c.fillRect(tx + i, ty, 1, 2); }
+    c.fillStyle = '#5a3a24'; c.fillRect(tx + 1, ty + 2, 1, 3); c.fillRect(tx + 5, ty + 2, 1, 3);
+    const chx = tx + 9; c.fillStyle = blue; c.fillRect(chx, ty - 3, 1, 8); c.fillRect(chx + 3, ty + 1, 1, 4); c.fillRect(chx, ty + 1, 4, 1);
+  }
+  const FLOWER = ['#d8337f', '#ff5fa2', '#b8236a'], leaf = night ? '#2a5a3a' : '#3f8f3f';
+  for (const fx of [1, LW - 12]) for (let i = 0; i < 45; i++) {
+    c.fillStyle = r() < 0.35 ? leaf : FLOWER[r() * 3 | 0];
+    c.fillRect(fx + (r() * 11 | 0), wallTop - 2 + (r() * r() * 14 | 0), 1, 1);
+  }
+  const y0 = wallTop - 12;
+  c.fillStyle = '#3a2f2a';
+  for (let x = 0; x < LW; x++) {
+    const t = 2 * x / LW - 1, y = Math.round(y0 + 5 * (1 - t * t));
+    c.fillRect(x, y, 1, 1);
+    if (x % 5 === 2) bulbs.push([x, y + 1]);
+  }
+}
+function drawBulbs(s, dancing, night) {
+  if (!bulbs.length) return;
+  const beat = gridIndex(s, song.beats);
+  bulbs.forEach(([x, y], i) => {
+    g.fillStyle = dancing ? PARTY[mod(i + beat, PARTY.length)] : night ? '#ffd35a' : '#fff4c8';
+    g.fillRect(x, y, 1, 2);
+  });
+}
+function house(c, r, x, base, w, h, front, night) {
+  const top = base - h;
+  const wall = night ? (front ? '#8e93b8' : '#5b5f86') : (front ? '#fbf8f0' : '#e6e9f4');
+  const shade = night ? (front ? '#6c7196' : '#45486c') : (front ? '#d6d2c8' : '#c4cbe4');
+  const blue = night ? '#2a4a93' : '#2f6fd6';
+  if (w >= 7 && r() < 0.5) {
+    const rad = Math.min(3, (w - 3) >> 1), cx = x + (w >> 1);
+    c.fillStyle = blue;
+    for (let dy = 0; dy < rad; dy++) { const hw = Math.round(Math.sqrt(rad * rad - (rad - dy - 0.5) ** 2)); c.fillRect(cx - hw, top - rad + dy, hw * 2, 1); }
+  }
+  c.fillStyle = wall; c.fillRect(x, top, w, h);
+  c.fillStyle = shade; c.fillRect(x + w - 2, top, 2, h);
+  for (let wy = top + 2; wy + 2 <= base - 2; wy += 4)
+    for (let wx = x + 2; wx + 2 <= x + w - 2; wx += 4)
+      if (r() < 0.6) { c.fillStyle = night ? (r() < 0.45 ? '#ffd35a' : '#262a4a') : (front ? blue : '#8fa0cf'); c.fillRect(wx, wy, 2, 2); }
+  if (front && r() < 0.5) { c.fillStyle = blue; c.fillRect(x + 2, base - 4, 2, 4); }
+}
+function drawSky(T, night) {
+  if (night) {
+    for (const s of stars) {
+      if (Math.abs(s.x - moon.x) < 7 && Math.abs(s.y - moon.y) < 7) continue;
+      const tw = Math.sin(T * 1.6 + s.p);
+      if (tw < -0.5) continue;
+      g.fillStyle = tw > 0.6 ? '#ffffff' : '#8f98d0';
+      g.fillRect(s.x, s.y, 1, 1);
+      if (s.big && tw > 0.6) { g.fillRect(s.x - 1, s.y, 3, 1); g.fillRect(s.x, s.y - 1, 1, 3); }
+    }
+  } else {
+    for (const c of clouds) {
+      const w = c.w, x = Math.round(((c.x + T * c.v) % (LW + w + 10)) - w - 5), y = c.y;
+      g.fillStyle = '#ffffff';
+      g.fillRect(x + 3, y, w - 8, 1); g.fillRect(x + 1, y + 1, w - 3, 1); g.fillRect(x, y + 2, w, 2);
+      g.fillStyle = '#d6e4ff'; g.fillRect(x + 1, y + 4, w - 2, 1);
+    }
+  }
+}
+function gridIndex(s, list) {
+  const b = Math.floor(s / song.bar), w = s - b * song.bar;
+  let k = 0;
+  for (const h of list) if (w >= h) k++;
+  return b * list.length + k - 1;
+}
+function nearestBeat(s) { // distance in steps, and which beat (as an absolute step) it was
+  const base = Math.floor(s / song.bar) * song.bar;
+  let best = { d: Infinity, id: 0 };
+  for (const o of [-song.bar, 0, song.bar]) for (const b of song.beats) {
+    const d = Math.abs(s - (base + o + b));
+    if (d < best.d) best = { d, id: base + o + b };
+  }
+  return best;
+}
+function beatGap() { // shortest gap between beats in seconds
+  const b = song.beats.concat(song.bar + song.beats[0]);
+  let m = Infinity;
+  for (let i = 1; i < b.length; i++) m = Math.min(m, b[i] - b[i - 1]);
+  return m * STEP;
+}
+function beatPhase(s) {
+  const w = mod(s, song.bar);
+  let start = 0;
+  for (const b of song.beats) if (w >= b) start = b;
+  return w - start;
+}
+function drawFloor(s, dancing, pulse, pal) {
+  g.fillStyle = '#140f1f'; g.fillRect(0, floorTop, LW, LH - floorTop);
+  g.fillStyle = '#5b4b80'; g.fillRect(0, floorTop, LW, 1);
+  const beat = gridIndex(s, song.beats), tw = 7;
+  const cols = Math.ceil(LW / (tw + 1)) + 1, x0 = Math.floor((LW - cols * (tw + 1)) / 2);
+  for (let j = 0, y = floorTop + 2; y < LH; j++) {
+    const th = 2 + Math.floor(j * 0.8); // rows grow toward the viewer
+    for (let i = 0; i < cols; i++) {
+      let c;
+      if (dancing) c = mod(i * 7 + j * 13 + beat * 5, 5) < 2 ? pal[mod(i + j * 2 + beat, pal.length)] : '#2a2140';
+      else c = (i + j) & 1 ? (pulse ? '#3b3156' : '#2a2140') : (pulse ? '#453963' : '#322849');
+      g.fillStyle = c; g.fillRect(x0 + i * (tw + 1), y, tw, th);
+    }
+    y += th + 1;
+  }
+}
+function beam(x0, y0, x1, y1, col) {
+  g.fillStyle = col;
+  const n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0), 1);
+  for (let i = 0; i <= n; i += 2) g.fillRect(Math.round(x0 + (x1 - x0) * i / n), Math.round(y0 + (y1 - y0) * i / n), 1, 1);
+}
+function drawBall(s, dancing, dt, pal) {
+  const target = dancing ? Math.max(6, Math.min(ballTop, groundY - 36 - 16)) : -14;
+  ballY += (target - ballY) * Math.min(1, dt * 3);
+  const by = Math.round(ballY);
+  if (by < -6) return;
+  const cx = LW >> 1, e = gridIndex(s, song.hits);
+  if (dancing) for (let k = 0; k < 4; k++) {
+    const a = e * 0.35 + k * 1.6;
+    beam(cx, by + 4, cx + Math.round(Math.sin(a) * LW * 0.6), floorTop + 2 + k, pal[mod(k + (e >> 1), pal.length)]);
+  }
+  g.fillStyle = '#6d6a86'; g.fillRect(cx, 0, 1, Math.max(0, by - 4));
+  for (let dy = -4; dy <= 4; dy++) {
+    const hw = Math.round(Math.sqrt(20 - dy * dy));
+    for (let dx = -hw; dx <= hw; dx++) {
+      g.fillStyle = mod(dx + dy + e, 2) ? '#dfe3f5' : mod(dx - dy + e, 3) ? '#8a8fb0' : '#5c6082';
+      g.fillRect(cx + dx, by + dy, 1, 1);
+    }
+  }
+  if (dancing && mod(e, 2)) {
+    g.fillStyle = '#ffffff';
+    for (let k = 0; k < 3; k++) {
+      const a = e * 2.3 + k * 2.1, x = cx + Math.round(Math.cos(a) * 8), y = by + Math.round(Math.sin(a) * 7);
+      g.fillRect(x - 1, y, 3, 1); g.fillRect(x, y - 1, 1, 3);
+    }
+  }
+}
+function drawShadow(cx, jump, gy = groundY) {
+  const w = Math.max(8, 18 + jump * 2);
+  g.fillStyle = 'rgba(0,0,0,.35)';
+  g.fillRect(cx - (w >> 1), gy - 1, w, 1);
+  g.fillRect(cx - (w >> 1) + 2, gy, w - 4, 1);
+}
+function drawTrack(s, cx, from, to) { // notes slide in from both sides and meet in the middle on the beat
+  const y = groundY + 4, half = Math.max(12, Math.min((LW >> 1) - 3, 44)), lead = Math.max(6, 1 / STEP);
+  g.fillStyle = K; g.fillRect(cx - half - 2, y - 2, half * 2 + 5, 5);
+  g.fillStyle = '#2a2140'; g.fillRect(cx - half - 1, y - 1, half * 2 + 3, 3);
+  g.fillStyle = beatPhase(s) < 1 && s >= from ? '#ffd35a' : '#8a7fb8';
+  g.fillRect(cx - 3, y - 3, 7, 1); g.fillRect(cx - 3, y + 3, 7, 1); g.fillRect(cx - 3, y - 3, 1, 7); g.fillRect(cx + 3, y - 3, 1, 7);
+  for (let base = Math.floor((s - 2) / song.bar) * song.bar; base <= s + lead; base += song.bar)
+    for (const b of song.beats) {
+      const at = base + b;
+      if (at < from || at >= to || at < s - 0.5 || at > s + lead || hitBeats.has(at)) continue;
+      const d = Math.max(0, (at - s) / lead) * half, col = b === 0 ? '#ffd35a' : '#ffffff';
+      sprite(STAR, Math.round(cx - d) - 1, y - 1, col); sprite(STAR, Math.round(cx + d) - 1, y - 1, col);
+    }
+}
+
+/* ================= Particles ================= */
+const parts = [];
+function spawn(x, y, kind, n, col) {
+  for (let i = 0; i < n; i++) parts.push({
+    x, y, kind, age: 0, life: 0.9 + Math.random() * 0.7,
+    vx: (Math.random() - 0.5) * (kind === 'star' ? 50 : 30), vy: -(12 + Math.random() * 26),
+    c: col || PARTY[Math.random() * PARTY.length | 0],
+  });
+}
+function stepParticles(dt) {
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const p = parts[i];
+    p.age += dt;
+    if (p.age > p.life) { parts.splice(i, 1); continue; }
+    p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= 0.97;
+    p.vy += (p.kind === 'star' ? 45 : p.kind === 'plate' ? 140 : p.kind === 'shard' ? 160 : 4) * dt;
+    if (p.kind === 'plate' && p.y >= groundY) { // smash
+      for (let k = 0; k < 7; k++) parts.push({ x: p.x + 2, y: groundY - 1, kind: 'shard', age: 0, life: 0.5 + Math.random() * 0.3, vx: (Math.random() - 0.5) * 70, vy: -(20 + Math.random() * 45), c: '#f4f1ea' });
+      parts.splice(i, 1); sfx('plate');
+      store.set('fanis_plates', ++plates); if (plates >= 50) award('plates');
+      continue;
+    }
+    if (p.kind === 'shard') { g.fillStyle = p.c; g.fillRect(Math.round(p.x), Math.round(p.y), 1, 1); continue; }
+    if (p.kind !== 'plate' && p.age > p.life * 0.7 && (Math.floor(p.age * 20) & 1)) continue; // 8-bit flicker instead of a fade
+    sprite(p.kind === 'star' ? STAR : p.kind === 'plate' ? PLATE : NOTE, Math.round(p.x), Math.round(p.y), p.c);
+  }
+}
+
+/* ================= Game state ================= */
+let mode = 'select', char = FANIS, battle = null, pickP2 = false, p1Index = 0;
+let selIndex = Math.max(0, ROSTER.findIndex(c => c.id === store.get('fanis_last', 'fanis') && status(c) === 'open'));
+let danceVisStart = 0, danceAudioStart = Infinity, danceEnd = -1;
+let combo = 0, streak = 0, party = 0, wasDancing = false, everDanced = false, crewShown = false;
+let move = null, moveStart = 0, cycle = 0, lastBeat = -1, lastHit = -1, pokeUntil = 0, pokes = 0;
+let lastJudged = -1, bubbleUntil = 0, lastNudge = 0, hintText = null, comboText = '', bannerTimer = 0, toastTimer = 0, titleTaps = [];
+const seen = new Set(), hitBeats = new Set();
+let geo = { x: 0, y: 0, by: 0, hx: 0, dy: 0, hands: { L: [0, 0], R: [0, 0] } };
+const isDancing = s => s >= danceVisStart && s < danceEnd;
+const LINE_MOVES = new Set(['KALAMATIANOS', 'SYRTOS', 'HASAPIKO']);
+const poseAt = (m, s) => m.poses[mod(Math.floor(gridIndex(s, song.hits) / (m.hold || 1)), m.poses.length)];
+
+function say(text, dur) { E.bubble.textContent = text; E.bubble.hidden = false; bubbleUntil = perf() + dur; }
+function placeBubble() {
+  if (E.bubble.hidden) return;
+  if (perf() > bubbleUntil) { E.bubble.hidden = true; return; }
+  const w = E.bubble.offsetWidth, h = E.bubble.offsetHeight;
+  const sx = cvLeft + (geo.x + 12 + geo.hx) * P, sy = (geo.y + geo.by + geo.dy - 3) * P;
+  const left = Math.min(innerWidth - 16 - w, Math.max(16, sx - w / 2));
+  E.bubble.style.transform = `translate(${Math.round(left)}px, ${Math.round(sy - h)}px)`;
+}
+function judge(text, cls) {
+  const d = document.createElement('div');
+  d.className = 'judge ' + cls; d.textContent = text;
+  const x = cvLeft + (geo.x + 20 + geo.hx) * P, y = (geo.y + geo.by + 4) * P;
+  d.style.left = Math.min(innerWidth - 110, x) + 'px'; d.style.top = y + 'px';
+  document.body.appendChild(d);
+  setTimeout(() => d.remove(), 700);
+}
+function banner(top, name, sub) {
+  E.bTop.textContent = top; E.bName.textContent = name; E.bSub.textContent = sub;
+  E.banner.hidden = false;
+  clearTimeout(bannerTimer);
+  bannerTimer = setTimeout(() => { E.banner.hidden = true; }, 3200);
+}
+function toast(text) {
+  E.toast.textContent = text; E.toast.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { E.toast.hidden = true; }, 2600);
+}
+function buzz(ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {} }
+function award(id) {
+  if (earned.has(id)) return;
+  earned.add(id); store.set('fanis_trophies', [...earned]);
+  toast('TROPHY! ' + TROPHIES.find(t => t.id === id).name);
+  buzz(30); sfx('new');
+}
+function unlock(id) {
+  if (unlocked.has(id)) return;
+  unlocked.add(id); fresh.add(id);
+  store.set('fanis_unlocked', [...unlocked]); store.set('fanis_new', [...fresh]);
+  const c = ROSTER.find(x => x.id === id);
+  banner(c.unlockLine, c.name + ' UNLOCKED', 'NEW FIGHTER IN THE SELECT SCREEN');
+  sfx('unlock'); buzz(60);
+  if (ROSTER.every(x => x.soon || unlocked.has(x.id))) award('squad');
+  if (mode === 'select') buildGrid();
+}
+function fitTitle() {
+  const n = E.title.textContent.length;
+  E.title.style.fontSize = Math.round(Math.min(76, innerWidth * 0.12, (innerWidth - 48) / (n * 1.12))) + 'px';
+}
+function setHint(text, blink) {
+  if (text === hintText) return;
+  hintText = text; E.hint.textContent = text; E.hint.classList.toggle('blink', blink);
+}
+function setCombo(text) { if (text !== comboText) { comboText = text; E.combo.textContent = text; } }
+function popMove(text) { E.move.textContent = text; E.move.classList.remove('pop'); void E.move.offsetWidth; E.move.classList.add('pop'); }
+function saveParty() {
+  if (party > bestParty) { bestParty = party; store.set('fanis_best_party', Math.round(bestParty * 10) / 10); }
+}
+function endSession(quiet) {
+  saveParty();
+  move = null; E.move.textContent = ''; setCombo('');
+  if (!quiet) { say(pick(['PHEW!', 'AGAIN?', 'MORE?', 'OPA!']), 1.4); sfx('phew'); }
+}
+function resetRun() { combo = 0; streak = 0; party = 0; lastJudged = -1; seen.clear(); hitBeats.clear(); cycle = 0; move = null; crewShown = false; }
+function tapFx() {
+  const hx = geo.x + 12 + geo.hx, hy = geo.y + geo.by + geo.dy;
+  spawn(hx, hy, 'note', 3); spawn(hx, hy, 'star', 3);
+}
+function headTap() {
+  startMusic();
+  const s = Math.max(0, stepNow());
+  const first = !isDancing(s);
+  if (first) { resetRun(); danceVisStart = s; danceAudioStart = nextStep; lastJudged = nearestBeat(s).id; award('first'); }
+  else judgeTap(s);
+  everDanced = true;
+  combo++;
+  if (combo > bestCombo) { bestCombo = combo; store.set('fanis_best_combo', bestCombo); }
+  danceEnd = Math.max(danceEnd, Math.ceil((s + 3.8 / STEP) / song.bar) * song.bar); // about four seconds, ending on a bar line
+  tapFx();
+  if (combo === 12) { say('SHADES ON!', 1.4); sfx('new'); award('shades'); }
+  else { if (first) say(pick(char.shouts), 0.9); sfx('tap'); }
+}
+function judgeTap(s) { // returns 'p', 'g' or 'm'
+  const nb = nearestBeat(s), off = nb.d * STEP, gap = beatGap();
+  if (nb.id === lastJudged) { judge('TOO FAST', 'm'); streak = 0; return 'm'; } // one tap per beat
+  lastJudged = nb.id;
+  if (off <= Math.min(0.08, gap * 0.2)) {
+    streak++; hitBeats.add(nb.id); buzz(12);
+    judge(streak > 1 ? 'PERFECT x' + streak : 'PERFECT', 'p');
+    if (streak > bestStreak) { bestStreak = streak; store.set('fanis_best_streak', bestStreak); }
+    if (streak % 4 === 0) say(pick(char.shouts), 0.8);
+    if (streak >= 4) award('onbeat');
+    if (streak >= 16) award('metro');
+    if (streak >= 8) unlock('amarildo');
+    return 'p';
+  }
+  if (off <= Math.min(0.16, gap * 0.4)) { hitBeats.add(nb.id); judge('GOOD', 'g'); return 'g'; }
+  judge('MISS', 'm'); streak = 0; return 'm';
+}
+function poke() {
+  startMusic();
+  pokeUntil = perf() + 0.6;
+  say(++pokes === 1 ? 'THE HEAD! TAP THE HEAD!' : pick(char.pokes), 1.2);
+  sfx('poke');
+}
+function pickMove(s) {
+  const open = char.moves.filter(m => combo >= m.need);
+  const m = open.find(x => !seen.has(x.name)) || open[cycle++ % open.length];
+  const isNew = !seen.has(m.name);
+  seen.add(m.name); move = m; moveStart = s;
+  popMove((isNew && m.need ? 'NEW! ' : '') + m.name + '!');
+  if (isNew && m.need) sfx('new');
+  if (m.say) say(m.say, 1);
+  if (m.name === 'SIRTAKI') award('opa');
+  if (m.name === 'MOONWALK') award('moon');
+}
+function idlePose(s, T) {
+  if (running) return beatPhase(s) < (song.bar === 7 ? 1 : 2) ? IDLE_TAP : IDLE;
+  return Math.floor(T * 1.1) % 2 ? IDLE_BREATH : IDLE;
+}
+function poseFor(s, T, dancing, st) {
+  if (st !== 'open') return Math.floor(T * 1.1) % 2 ? IDLE_BREATH : IDLE;
+  if (pokeUntil > T) return POKED;
+  if (dancing && move) return poseAt(move, s);
+  return idlePose(s, T);
+}
+function faceFor(s, T, dancing, st) {
+  if (st !== 'open') return 'idle';
+  if (pokeUntil > T) return 'surprised';
+  if (dancing) return combo >= 12 ? 'cool' : mod(gridIndex(s, song.beats), 2) ? 'happy' : 'open';
+  return T % 3.7 < 0.13 ? 'blink' : 'idle';
+}
+
+/* ================= Dance-off =================
+   Two players take turns on one phone. Each turn is a few bars of that fighter's own song; the score is
+   accuracy (perfect = 2, good = 1, out of 2 per beat) so a fast 7/8 and a slow boom-bap compare fairly. Best of 3. */
+const pLabel = i => 'P' + (i + 1) + ' ' + battle.p[i].name;
+function startBattle(a, b) {
+  startMusic();
+  battle = { p: [a, b], round: 0, turn: 0, wins: [0, 0], acc: [[], []], phase: 'ready', winner: -1, pts: 0, count: -1, nextAt: 0 };
+  mode = 'battle'; pickP2 = false;
+  E.select.hidden = true; E.trophyBtn.hidden = true; E.back.hidden = false; E.back.textContent = '< FIGHTERS';
+  E.title.hidden = false; E.hint.hidden = false; E.low.hidden = false; E.bEnd.hidden = true; E.bubble.hidden = true;
+  E.move.textContent = ''; setCombo('');
+  banner('DANCE-OFF · BEST OF 3', a.name + ' VS ' + b.name, 'TAKE TURNS. TAP ON THE BEAT.');
+  beginTurn(true);
+  measureHud();
+}
+function beginTurn(first) {
+  const B = battle, c = B.p[B.turn];
+  char = c; setSong(c.song); resetRun();
+  const barSec = song.bar * STEP, countIn = Math.max(1, Math.ceil((first ? 3.2 : 1.6) / barSec));
+  B.phase = 'ready'; B.pts = 0; B.count = -1;
+  B.goStart = countIn * song.bar; B.goEnd = B.goStart + song.battleBars * song.bar;
+  danceVisStart = B.goStart; danceAudioStart = B.goStart; danceEnd = B.goEnd;
+  E.title.textContent = 'ROUND ' + (B.round + 1); fitTitle();
+  setHint('P' + (B.turn + 1) + ' ' + c.name + ': GET READY', true);
+  E.move.textContent = ''; E.low.hidden = false; E.bEnd.hidden = true;
+}
+function battleTap() {
+  startMusic();
+  const B = battle;
+  if (!B || B.phase !== 'go') return;
+  const r = judgeTap(Math.max(0, stepNow()));
+  B.pts += r === 'p' ? 2 : r === 'g' ? 1 : 0;
+  combo++;
+  tapFx(); sfx('tap');
+}
+function battleStep(s, T) {
+  const B = battle;
+  if (B.phase === 'ready') {
+    if (s >= B.goStart - song.bar) { // count down the last bar before GO
+      const left = song.beats.length - mod(gridIndex(s, song.beats), song.beats.length);
+      if (left !== B.count) { B.count = left; popMove(String(left)); sfx('blip'); }
+    }
+    if (s >= B.goStart) {
+      B.phase = 'go'; E.move.textContent = ''; say('GO!', 0.7); sfx('start');
+      setHint('P' + (B.turn + 1) + ' ' + char.name + ': TAP ON THE BEAT!', false);
+    }
+  }
+  if (B.phase === 'go') {
+    const done = gridIndex(s, song.beats) - gridIndex(B.goStart, song.beats) + 1;
+    const live = done > 0 ? Math.min(100, Math.round(100 * B.pts / (done * 2))) : 0;
+    setCombo('WINS P1 ' + B.wins[0] + ' - ' + B.wins[1] + ' P2   ·   ' + live + '%');
+    if (s >= B.goEnd) {
+      const acc = Math.min(100, Math.round(100 * B.pts / (song.battleBars * song.beats.length * 2)));
+      B.acc[B.turn][B.round] = acc;
+      if (acc === 100) award('flawless');
+      popMove(pLabel(B.turn) + ' ' + acc + '%');
+      B.phase = 'result'; B.nextAt = T + 1.8;
+    }
+  }
+  if (B.phase === 'result' && T >= B.nextAt) {
+    if (B.turn === 0) { B.turn = 1; beginTurn(false); return; }
+    const a = B.acc[0][B.round], b = B.acc[1][B.round], w = a > b ? 0 : b > a ? 1 : -1;
+    if (w >= 0) B.wins[w]++;
+    setCombo('WINS P1 ' + B.wins[0] + ' - ' + B.wins[1] + ' P2');
+    if (B.wins[0] === 2 || B.wins[1] === 2 || B.round === 2) { endBattle(a, b); return; }
+    banner('ROUND ' + (B.round + 1), w < 0 ? 'TIE!' : pLabel(w) + ' TAKES IT', a + '% VS ' + b + '%');
+    B.phase = 'break'; B.nextAt = T + 3;
+  }
+  if (B.phase === 'break' && T >= B.nextAt) { B.round++; B.turn = 0; beginTurn(false); }
+}
+function endBattle(a, b) {
+  const B = battle, w = B.wins[0] > B.wins[1] ? 0 : B.wins[1] > B.wins[0] ? 1 : -1;
+  B.phase = 'end'; B.winner = w;
+  banner(w < 0 ? 'DANCE-OFF OVER' : 'WINNER', w < 0 ? 'DRAW!' : pLabel(w) + ' WINS!', 'ROUNDS ' + B.wins[0] + '-' + B.wins[1] + ' · LAST ROUND ' + a + '% VS ' + b + '%');
+  E.title.textContent = w < 0 ? 'DRAW' : 'WINNER'; fitTitle();
+  setHint(w < 0 ? 'REMATCH?' : pLabel(w) + ' VICTORY DANCE', false);
+  E.low.hidden = true; E.bEnd.hidden = false;
+  if (w >= 0) { // the winner gets the stage, the full move list and the shades
+    battlesWon++; store.set('fanis_battles_won', battlesWon); award('winner'); sfx('unlock'); buzz(80);
+    char = B.p[w]; setSong(char.song); resetRun();
+    combo = 12; danceVisStart = 0; danceAudioStart = 0; danceEnd = 1e9;
+  } else danceEnd = -1;
+}
+
+/* ================= Trophies ================= */
+function openTrophies() {
+  E.bests.textContent = '';
+  const rows = [['BEST STREAK', bestStreak], ['LONGEST PARTY', fmtTime(bestParty)], ['BEST COMBO', 'x' + bestCombo], ['DANCE-OFFS WON', battlesWon], ['PLATES SMASHED', plates]];
+  for (const [k, v] of rows) {
+    const dt = document.createElement('dt'), dd = document.createElement('dd');
+    dt.textContent = k; dd.textContent = v; E.bests.append(dt, dd);
+  }
+  const got = TROPHIES.filter(t => earned.has(t.id)).length;
+  E.tCount.textContent = got + ' OF ' + TROPHIES.length + ' TROPHIES';
+  E.tlist.textContent = '';
+  for (const t of TROPHIES) {
+    const li = document.createElement('li'), m = document.createElement('span'), box = document.createElement('div');
+    const n = document.createElement('div'), d = document.createElement('div');
+    li.className = earned.has(t.id) ? '' : 'off'; m.className = 'medal'; n.className = 'tname'; d.className = 'tdesc';
+    n.textContent = t.name; d.textContent = t.desc;
+    box.append(n, d); li.append(m, box); E.tlist.appendChild(li);
+  }
+  E.trophies.hidden = false; const tp = $('tPanel'); tp.scrollTop = 0; tp.focus({ preventScroll: true });
+}
+function closeTrophies() { E.trophies.hidden = true; E.trophyBtn.focus(); }
+
+/* ================= Fighter select ================= */
+function portrait(cnv, c, st) {
+  const pc = cnv.getContext('2d');
+  pc.clearRect(0, 0, cnv.width, cnv.height);
+  g = pc; SIL = st === 'open' ? null : SIL_COL; OX = -4; OY = 2;
+  torso(c, 0);
+  if (c.braid) braid(c, 0, 0);
+  head(OX + 5, OY + (c.headDY || 0), c, 'idle');
+  SIL = null;
+  if (st === 'locked') sprite(LOCK, 10, 12, '#ffd35a');
+  g = mainG;
+}
+function buildGrid() {
+  E.grid.textContent = '';
+  ROSTER.forEach((c, i) => {
+    const st = status(c), b = document.createElement('button');
+    b.type = 'button'; b.className = 'slot' + (st === 'soon' ? ' soon' : '');
+    b.setAttribute('aria-label', st === 'soon' ? 'Coming soon' : c.name + (st === 'locked' ? ', locked' : ''));
+    const cnv = document.createElement('canvas'); cnv.width = 16; cnv.height = 18;
+    portrait(cnv, c, st);
+    b.appendChild(cnv);
+    const badge = (cls, text) => { const n = document.createElement('span'); n.className = cls; n.textContent = text; b.appendChild(n); };
+    if (st === 'soon') badge('q', '?');
+    if (fresh.has(c.id) && st === 'open') badge('new', 'NEW');
+    if (pickP2 && i === p1Index) badge('p1', 'P1');
+    b.addEventListener('click', () => onSlot(i));
+    E.grid.appendChild(b);
+  });
+  markSel(); showInfo();
+}
+function markSel() { [...E.grid.children].forEach((b, i) => b.classList.toggle('on', i === selIndex)); }
+function showInfo() {
+  const c = ROSTER[selIndex], st = status(c);
+  E.selTitle.textContent = pickP2 ? 'PLAYER 2: PICK YOUR FIGHTER' : 'CHOOSE YOUR FIGHTER';
+  E.selName.textContent = st === 'soon' ? '???' : c.name;
+  E.selTag.textContent = st === 'open' ? c.tag : st === 'locked' ? 'LOCKED' : 'STAY TUNED';
+  E.selReq.textContent = st === 'locked' ? c.req + ' · ' + c.progress() : st === 'soon' ? 'A NEW FIGHTER IS WARMING UP'
+    : pickP2 ? 'P1 IS ' + ROSTER[p1Index].name + '. SAME FIGHTER IS FINE.' : c.moves.length + ' MOVES · ' + c.moves.filter(m => m.need).length + ' UNLOCK WITH COMBOS';
+  E.go.disabled = st !== 'open';
+  E.go.textContent = st === 'open' ? (pickP2 ? 'FIGHT!' : 'DANCE!') : st === 'locked' ? 'LOCKED' : 'STAY TUNED';
+  E.duel.hidden = pickP2; E.duel.disabled = st !== 'open';
+  E.back.hidden = !pickP2; E.back.textContent = '< CANCEL'; E.trophyBtn.hidden = pickP2;
+}
+function choose() { // DANCE! / FIGHT!
+  const c = ROSTER[selIndex];
+  if (status(c) !== 'open') return;
+  if (pickP2) startBattle(ROSTER[p1Index], c); else startPlay();
+}
+function onSlot(i) {
+  startMusic();
+  const c = ROSTER[i];
+  if (i === selIndex && status(c) === 'open') { choose(); return; }
+  selIndex = i; markSel(); showInfo(); sfx('blip');
+  if (status(c) === 'open' && song !== c.song) setSong(c.song);
+}
+function moveSel(d) {
+  selIndex = mod(selIndex + d, ROSTER.length); markSel(); showInfo(); sfx('blip');
+  const c = ROSTER[selIndex];
+  if (status(c) === 'open' && song !== c.song) setSong(c.song);
+  E.grid.children[selIndex].focus();
+}
+function startPlay() {
+  const c = ROSTER[selIndex];
+  if (status(c) !== 'open') return;
+  char = c; store.set('fanis_last', c.id);
+  if (fresh.delete(c.id)) store.set('fanis_new', [...fresh]);
+  mode = 'play';
+  E.select.hidden = true; E.trophyBtn.hidden = true; E.back.hidden = false; E.back.textContent = '< FIGHTERS';
+  E.title.hidden = false; E.hint.hidden = false; E.low.hidden = false; E.bEnd.hidden = true;
+  E.title.textContent = c.name; fitTitle();
+  hintText = null; setHint(c.hint, true);
+  resetRun(); everDanced = false; lastNudge = perf(); wasDancing = false;
+  setSong(c.song);
+  measureHud();
+  sfx('start');
+}
+function showSelect() {
+  if (mode === 'play') endSession(true);
+  mode = 'select'; battle = null; danceEnd = -1; wasDancing = false;
+  E.select.hidden = false; E.title.hidden = true; E.hint.hidden = true; E.low.hidden = true; E.bEnd.hidden = true; E.bubble.hidden = true;
+  buildGrid();
+  const c = ROSTER[selIndex];
+  if (status(c) === 'open' && song !== c.song) setSong(c.song);
+  measureHud();
+}
+const charCX = () => mode === 'select' && innerWidth > innerHeight * 1.2 ? Math.round(LW * 0.74) : LW >> 1;
+
+/* ================= Drawing the dancers ================= */
+function drawSolo(s, T, dancing, shown, st) {
+  const cx = charCX();
+  if (mode === 'play' && dancing && combo >= 4) drawCrew(s, cx);
+  const pose = poseFor(s, T, dancing, st);
+  drawShadow(cx, pose.jump || 0);
+  SIL = st === 'open' ? null : SIL_COL;
+  geo = drawChar(shown, cx - 12, groundY - 34, pose, faceFor(s, T, dancing, st));
+  SIL = null;
+  if (mode === 'play' && dancing) drawTrack(s, cx, danceVisStart, danceEnd);
+}
+function drawCrew(s, cx) { // party mode: every other unlocked fighter backs you up, a step behind
+  const crew = ROSTER.filter(c => c !== char && status(c) === 'open');
+  if (!crew.length) return;
+  if (!crewShown) { crewShown = true; popMove('PARTY MODE!'); award('crew'); }
+  const off = Math.max(14, Math.min(22, Math.round(LW * 0.3))), face = mod(gridIndex(s, song.beats), 2) ? 'happy' : 'open';
+  const line = char === EMY && move && LINE_MOVES.has(move.name); // Emy's circle dances: everyone joins the line
+  crew.forEach((c, i) => {
+    const x = cx + (i & 1 ? 1 : -1) * off * (1 + (i >> 1));
+    const pose = line ? Object.assign({}, poseAt(move, s), { k: '' }) : poseAt(c.moves[mod(Math.floor(s / (song.bar * 2)) + i, 3)], s);
+    drawShadow(x, pose.jump || 0, groundY - 3);
+    drawChar(c, x - 12, groundY - 37, pose, face);
+  });
+}
+function drawBattle(s, T, dancing) {
+  const B = battle, xs = [Math.round(LW * 0.3), Math.round(LW * 0.7)];
+  const act = B.phase === 'end' ? B.winner : B.turn;
+  for (const i of act === 0 ? [1, 0] : [0, 1]) { // the active dancer is drawn last, on top
+    const c = B.p[i];
+    let pose, face;
+    if (i === act && dancing && move) { pose = poseAt(move, s); face = faceFor(s, T, true, 'open'); }
+    else if (B.phase === 'end' && B.winner >= 0 && i !== B.winner) { pose = POKED; face = 'surprised'; }
+    else { pose = idlePose(s, T); face = T % 3.7 < 0.13 ? 'blink' : 'idle'; }
+    drawShadow(xs[i], pose.jump || 0);
+    const gg = drawChar(c, xs[i] - 12, groundY - 34, pose, face);
+    if (i === Math.max(0, act)) geo = gg;
+    const mx = xs[i], my = gg.y + gg.by + gg.dy - 6 - (i === act && Math.floor(T * 4) % 2 ? 1 : 0); // P1 / P2 marker
+    g.fillStyle = K; g.fillRect(mx - 3, my - 1, 7, 4);
+    g.fillStyle = i ? '#4fd8ff' : '#ff4f7b'; g.fillRect(mx - 2, my, 5, 1); g.fillRect(mx - 1, my + 1, 3, 1); g.fillRect(mx, my + 2, 1, 1);
+  }
+  if (B.phase === 'ready' || B.phase === 'go') drawTrack(s, LW >> 1, B.goStart, B.goEnd);
+}
+
+/* ================= Loop ================= */
+let last = performance.now();
+function frame(ms) {
+  const dt = Math.min(0.1, Math.max(0, (ms - last) / 1000)); last = ms;
+  const T = perf();
+  tick();
+  const s = Math.max(0, stepNow());
+  if (mode === 'battle') battleStep(s, T);
+  const playing = mode !== 'select', shown = playing ? char : ROSTER[selIndex], st = playing ? 'open' : status(shown);
+  const dancing = playing && running && isDancing(s);
+
+  if (dancing) {
+    const span = song.bar * song.moveBars;
+    if (!move || (Math.floor(s / span) !== Math.floor(moveStart / span) && s - moveStart >= span / 2)) pickMove(s);
+    const beat = gridIndex(s, song.beats);
+    if (beat !== lastBeat) { lastBeat = beat; spawn(geo.x + 12 + (beat & 1 ? 9 : -9), geo.y + geo.by + 12, 'note', 1); }
+    const hit = gridIndex(s, song.hits), pose = poseAt(move, s);
+    if (hit !== lastHit) {
+      lastHit = hit;
+      if (pose.plate) { const [px, py] = geo.hands[pose.plate]; parts.push({ x: px - 2, y: py - 1, kind: 'plate', age: 0, life: 3, vx: pose.plate === 'R' ? 18 : -18, vy: -25, c: '#f4f1ea' }); }
+    }
+    if (mode === 'play') {
+      party = (s - danceVisStart) * STEP;
+      if (party >= 60) { award('party'); if (!unlocked.has('emy')) { saveParty(); unlock('emy'); } }
+      if (party >= 180) award('marathon');
+      setCombo('COMBO x' + combo + '   STREAK x' + streak + '   ' + fmtTime(party));
+    }
+  }
+  if (mode === 'play') {
+    if (wasDancing && !dancing) endSession(false);
+    setHint(dancing ? 'TAP ON THE BEAT!' : char.hint, !dancing);
+    if (!everDanced && T - lastNudge > 7 && E.bubble.hidden) { say('PSST. TAP MY HEAD', 2); lastNudge = T; }
+  }
+  wasDancing = dancing;
+
+  const night = isNight(), stage = shown.stage || 'village', pal = shown.floor || PARTY;
+  if ((night ? 'n' : 'd') + stage !== bgKey) buildBg(night, stage);
+  g.drawImage(bg, 0, 0);
+  drawSky(T, night);
+  drawBulbs(s, dancing, night);
+  drawFloor(s, dancing, running && !dancing && beatPhase(s) < 1, pal);
+  drawBall(s, dancing, dt, pal);
+  if (mode === 'battle') drawBattle(s, T, dancing); else drawSolo(s, T, dancing, shown, st);
+  stepParticles(dt);
+  placeBubble();
+  requestAnimationFrame(frame);
+}
+
+/* ================= Input ================= */
+function hitTest(lx, ly) {
+  const hx = geo.x + 5 + geo.hx, hy = geo.y + geo.by + geo.dy;
+  if (lx >= hx - 2 && lx <= hx + 16 && ly >= hy - 4 && ly <= hy - geo.dy + 13) return 'head';
+  if (lx >= geo.x + 1 && lx <= geo.x + 23 && ly >= geo.y + 13 && ly <= geo.y + 35) return 'body';
+  return null;
+}
+addEventListener('pointerdown', e => {
+  if (e.button > 0 || (e.target.closest && e.target.closest('button, .panel'))) return;
+  const lx = (e.clientX - cvLeft) / P, ly = e.clientY / P;
+  if (mode === 'battle') { battleTap(); return; } // in a dance-off any tap counts
+  if (mode !== 'play') { startMusic(); spawn(lx, ly, 'star', 3); return; }
+  const hit = hitTest(lx, ly);
+  if (hit === 'head') headTap();
+  else if (hit === 'body') poke();
+  else { startMusic(); spawn(lx, ly, 'star', 3); }
+});
+// iOS only counts touchend/click as permission to start audio, so retry on those too.
+for (const ev of ['pointerup', 'touchend', 'click', 'keyup']) addEventListener(ev, () => { if (started) resumeAudio(); updateMuteLabel(); }, { passive: true });
+addEventListener('keydown', e => {
+  if (!E.trophies.hidden) { if (e.key === 'Escape') closeTrophies(); return; }
+  if (e.key === 'm' || e.key === 'M') { setMute(!muted); return; }
+  const onButton = e.target.closest && e.target.closest('button');
+  if (mode === 'select') {
+    const d = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -5, ArrowDown: 5 }[e.key];
+    if (d) { e.preventDefault(); startMusic(); moveSel(d); return; }
+    if (e.key === 'Escape' && pickP2) { pickP2 = false; buildGrid(); return; }
+    if ((e.key === 'Enter' || e.key === ' ') && !onButton) { e.preventDefault(); startMusic(); choose(); }
+    return;
+  }
+  if (e.key === 'Escape') { showSelect(); return; }
+  if (onButton) return;
+  if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); if (mode === 'battle') battleTap(); else headTap(); }
+});
+addEventListener('contextmenu', e => e.preventDefault());
+E.mute.addEventListener('click', () => { if (started && ctx && ctx.state !== 'running' && !muted) { resumeAudio(); return; } startMusic(); setMute(!muted); });
+E.back.addEventListener('click', () => { sfx('blip'); if (mode === 'select') { pickP2 = false; buildGrid(); } else showSelect(); });
+E.go.addEventListener('click', () => { startMusic(); choose(); });
+E.duel.addEventListener('click', () => {
+  startMusic();
+  if (status(ROSTER[selIndex]) !== 'open') return;
+  pickP2 = true; p1Index = selIndex; sfx('blip'); buildGrid();
+});
+E.rematch.addEventListener('click', () => { const [a, b] = battle.p; startBattle(a, b); });
+E.bExit.addEventListener('click', () => { sfx('blip'); showSelect(); });
+E.trophyBtn.addEventListener('click', () => { startMusic(); sfx('blip'); openTrophies(); });
+E.tclose.addEventListener('click', closeTrophies);
+E.selTitle.addEventListener('click', () => { // five quick taps on the title unlocks everyone
+  const now = perf();
+  titleTaps = titleTaps.filter(t => now - t < 2).concat(now);
+  if (titleTaps.length >= 5) {
+    titleTaps = [];
+    ['amarildo', 'emy'].forEach(id => { if (!unlocked.has(id)) { unlocked.add(id); fresh.add(id); } });
+    store.set('fanis_unlocked', [...unlocked]); store.set('fanis_new', [...fresh]);
+    startMusic(); banner('CHEAT CODE', 'ALL FIGHTERS OPEN', 'NO SHAME'); sfx('unlock');
+    award('squad'); buildGrid();
+  }
+});
+addEventListener('resize', resize);
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { measureHud(); fitTitle(); });
+setInterval(tick, 25);
+
+resize();
+setMute(muted);
+showSelect();
+requestAnimationFrame(frame);
+})();
+
+</script>
+
+</body>
+</html>
